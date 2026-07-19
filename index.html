@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gastos">
+<meta name="theme-color" content="#0e0e12">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<title>Gastos</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <h1 id="pageTitle">Lançar gasto</h1>
+  </header>
+
+  <main id="view-lancar" class="view active">
+    <form id="expenseForm" autocomplete="off">
+      <label class="field">
+        <span>Descrição</span>
+        <input type="text" id="descInput" placeholder="Ex: Gasolina" required maxlength="60">
+      </label>
+
+      <label class="field">
+        <span>Valor (R$)</span>
+        <input type="number" id="amountInput" placeholder="0,00" step="0.01" min="0" inputmode="decimal" required>
+      </label>
+
+      <label class="field">
+        <span>Categoria</span>
+        <select id="categorySelect" required></select>
+      </label>
+
+      <div id="newCategoryBox" class="new-category-box hidden">
+        <input type="text" id="newCategoryInput" placeholder="Nome da nova categoria" maxlength="30">
+        <button type="button" id="confirmNewCategoryBtn" class="small-btn">Adicionar</button>
+      </div>
+
+      <label class="field">
+        <span>Data</span>
+        <input type="date" id="dateInput" required>
+      </label>
+
+      <button type="submit" class="primary-btn">Salvar gasto</button>
+    </form>
+    <div id="toast" class="toast hidden"></div>
+  </main>
+
+  <main id="view-historico" class="view">
+    <div id="summaryBar" class="summary-bar"></div>
+    <div id="historyList" class="history-list"></div>
+  </main>
+
+  <main id="view-categorias" class="view">
+    <form id="categoryForm" autocomplete="off">
+      <input type="text" id="categoryNameInput" placeholder="Nova categoria" required maxlength="30">
+      <button type="submit" class="small-btn">Adicionar</button>
+    </form>
+    <ul id="categoryList" class="category-list"></ul>
+  </main>
+
+  <nav class="tabbar">
+    <button data-view="lancar" class="tab active">
+      <span class="icon">＋</span><span class="label">Lançar</span>
+    </button>
+    <button data-view="historico" class="tab">
+      <span class="icon">☰</span><span class="label">Histórico</span>
+    </button>
+    <button data-view="categorias" class="tab">
+      <span class="icon">◆</span><span class="label">Categorias</span>
+    </button>
+  </nav>
+</div>
+
+<div id="modalOverlay" class="modal-overlay hidden">
+  <div class="modal">
+    <p id="modalMessage"></p>
+    <div class="modal-actions">
+      <button id="modalCancel" class="modal-btn">Cancelar</button>
+      <button id="modalConfirm" class="modal-btn danger">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
