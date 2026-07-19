@@ -359,6 +359,9 @@
   var settingsBtn = document.getElementById("settingsBtn");
   var settingsOverlay = document.getElementById("settingsOverlay");
   var themeToggle = document.getElementById("themeToggle");
+  var exportBackupBtn = document.getElementById("exportBackupBtn");
+  var importBackupBtn = document.getElementById("importBackupBtn");
+  var importBackupInput = document.getElementById("importBackupInput");
 
   var modalOverlay = document.getElementById("modalOverlay");
   var modalMessage = document.getElementById("modalMessage");
@@ -541,6 +544,69 @@
     themeToggle.querySelectorAll(".segmented-btn").forEach(function (b) {
       b.classList.toggle("active", b === btn);
     });
+  });
+
+  // ---------- backup / restore ----------
+  function exportBackup() {
+    var exportedAt = new Date().toISOString();
+    var data = {
+      version: 1,
+      exportedAt: exportedAt,
+      expenses: loadTransactions(),
+      categories: loadCategories("expense"),
+      incomeCategories: loadCategories("income"),
+      paymentMethods: loadPaymentMethods(),
+      budget: loadBudgetMap(),
+      theme: loadTheme()
+    };
+
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "money-tracker-backup-" + exportedAt.slice(0, 10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("Backup exported!");
+  }
+
+  function restoreBackup(data) {
+    if (Array.isArray(data.expenses)) saveTransactions(data.expenses);
+    if (Array.isArray(data.categories)) saveCategories("expense", data.categories);
+    if (Array.isArray(data.incomeCategories)) saveCategories("income", data.incomeCategories);
+    if (Array.isArray(data.paymentMethods)) savePaymentMethods(data.paymentMethods);
+    if (data.budget && typeof data.budget === "object" && !Array.isArray(data.budget)) saveBudgetMap(data.budget);
+    if (typeof data.theme === "string") { saveTheme(data.theme); applyTheme(data.theme); }
+    closeSettings();
+    showToast("Backup restored!");
+    switchView("home");
+  }
+
+  function importBackupFile(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var data;
+      try { data = JSON.parse(reader.result); }
+      catch (e) { showToast("Invalid backup file."); return; }
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        showToast("Invalid backup file.");
+        return;
+      }
+      showConfirm("Restore this backup? It will replace all current data on this device.", function () {
+        restoreBackup(data);
+      });
+    };
+    reader.readAsText(file);
+  }
+
+  exportBackupBtn.addEventListener("click", exportBackup);
+  importBackupBtn.addEventListener("click", function () { importBackupInput.click(); });
+  importBackupInput.addEventListener("change", function () {
+    var file = importBackupInput.files[0];
+    if (file) importBackupFile(file);
+    importBackupInput.value = "";
   });
 
   // ---------- toast ----------
