@@ -1,4 +1,4 @@
-var CACHE_NAME = "gastos-v19";
+var CACHE_NAME = "gastos-v20";
 var ASSETS = [
   "./",
   "./index.html",

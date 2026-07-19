@@ -750,7 +750,7 @@
   function renderHome() {
     var txs = loadTransactions();
     var thisMonth = financialMonthKeyFor(todayStr());
-    homeCycleNote.textContent = "Billing cycle: " + cycleRangeLabel(thisMonth);
+    homeCycleNote.textContent = cycleRangeLabel(thisMonth);
 
     var moneyIn = 0, moneyOut = 0;
     txs.forEach(function (t) {
@@ -1038,7 +1038,7 @@
       }
 
       var path = document.createElementNS(SVG_NS, "path");
-      path.setAttribute("d", describeArcPath(50, 50, 44, 27, drawStart, drawEnd));
+      path.setAttribute("d", describeArcPath(50, 50, 44, 33, drawStart, drawEnd));
       path.setAttribute("fill", entry.color);
       path.setAttribute("class", "donut-slice");
       path.dataset.index = String(i);
