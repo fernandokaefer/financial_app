@@ -419,6 +419,20 @@ html, body {
   letter-spacing: 0.01em;
 }
 
+.month-nav-sublabel {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin: -10px 0 16px;
+}
+
+.cycle-note {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin: -2px 0 12px;
+}
+
 .primary-btn {
   width: 100%;
   padding: 14px;

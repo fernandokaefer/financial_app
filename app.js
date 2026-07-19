@@ -164,14 +164,62 @@
     return d.toISOString().slice(0, 10);
   }
 
-  function monthKeyFor(dateStr) { return dateStr.slice(0, 7); } // YYYY-MM
+  // Billing cycle: closes on the 10th, so a cycle named "2026-07" runs
+  // from Jul 11 through Aug 10 (paid mid-August) — not the calendar month.
+  var CYCLE_CLOSE_DAY = 10;
 
-  function monthEndDateStr(monthKey) {
+  function isoDateStr(d) {
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, "0");
+    var day = String(d.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  }
+
+  function financialMonthKeyFor(dateStr) {
+    var parts = dateStr.split("-");
+    var year = parseInt(parts[0], 10);
+    var month = parseInt(parts[1], 10) - 1;
+    var day = parseInt(parts[2], 10);
+    if (day <= CYCLE_CLOSE_DAY) {
+      month -= 1;
+      if (month < 0) { month = 11; year -= 1; }
+    }
+    return year + "-" + String(month + 1).padStart(2, "0");
+  }
+
+  function cycleBounds(monthKey) {
     var parts = monthKey.split("-");
     var year = parseInt(parts[0], 10);
-    var month = parseInt(parts[1], 10);
-    var lastDay = new Date(year, month, 0).getDate();
-    return monthKey + "-" + String(lastDay).padStart(2, "0");
+    var month = parseInt(parts[1], 10) - 1;
+    return {
+      start: isoDateStr(new Date(year, month, CYCLE_CLOSE_DAY + 1)),
+      end: isoDateStr(new Date(year, month + 1, CYCLE_CLOSE_DAY))
+    };
+  }
+
+  function formatShortDate(dateStr) {
+    var d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString("en-US", { day: "2-digit", month: "short" });
+  }
+
+  function cycleRangeLabel(monthKey) {
+    var bounds = cycleBounds(monthKey);
+    return formatShortDate(bounds.start) + " – " + formatShortDate(bounds.end);
+  }
+
+  function financialYearBounds(year) {
+    return {
+      start: cycleBounds(year + "-01").start,
+      end: cycleBounds(year + "-12").end
+    };
+  }
+
+  function financialYearRangeLabel(year) {
+    var bounds = financialYearBounds(year);
+    var d = new Date(bounds.start + "T00:00:00");
+    var e = new Date(bounds.end + "T00:00:00");
+    var opts = { day: "2-digit", month: "short", year: "numeric" };
+    return d.toLocaleDateString("en-US", opts) + " – " + e.toLocaleDateString("en-US", opts);
   }
 
   function addMonthsToDateStr(dateStr, n) {
@@ -190,12 +238,13 @@
   }
 
   function monthKeyWithOffset(offset) {
-    var d = new Date();
-    d.setDate(1);
-    d.setMonth(d.getMonth() + offset);
-    var y = d.getFullYear();
-    var m = String(d.getMonth() + 1).padStart(2, "0");
-    return y + "-" + m;
+    var base = financialMonthKeyFor(todayStr());
+    var parts = base.split("-");
+    var year = parseInt(parts[0], 10);
+    var month = parseInt(parts[1], 10) - 1 + offset;
+    var targetYear = year + Math.floor(month / 12);
+    var targetMonth = ((month % 12) + 12) % 12;
+    return targetYear + "-" + String(targetMonth + 1).padStart(2, "0");
   }
 
   function monthLabelFor(monthKey) {
@@ -258,6 +307,7 @@
   var budgetBox = document.getElementById("budgetBox");
   var moneyInBox = document.getElementById("moneyInBox");
   var moneyOutBox = document.getElementById("moneyOutBox");
+  var homeCycleNote = document.getElementById("homeCycleNote");
   var manageCategoriesLink = document.getElementById("manageCategoriesLink");
   var backToHomeBtn = document.getElementById("backToHomeBtn");
 
@@ -282,12 +332,14 @@
   var monthPrevBtn = document.getElementById("monthPrevBtn");
   var monthNextBtn = document.getElementById("monthNextBtn");
   var monthNavLabel = document.getElementById("monthNavLabel");
+  var monthNavSubLabel = document.getElementById("monthNavSubLabel");
   var monthSummaryBar = document.getElementById("monthSummaryBar");
   var monthList = document.getElementById("monthList");
 
   var yearPrevBtn = document.getElementById("yearPrevBtn");
   var yearNextBtn = document.getElementById("yearNextBtn");
   var yearNavLabel = document.getElementById("yearNavLabel");
+  var yearNavSubLabel = document.getElementById("yearNavSubLabel");
   var annualMoneyIn = document.getElementById("annualMoneyIn");
   var annualMoneyOut = document.getElementById("annualMoneyOut");
   var annualDifference = document.getElementById("annualDifference");
@@ -444,9 +496,9 @@
 
   // ---------- budget modal ----------
   function openBudgetModal() {
-    var thisMonth = monthKeyFor(todayStr());
+    var thisMonth = financialMonthKeyFor(todayStr());
     var current = getBudgetForMonth(thisMonth);
-    budgetModalTitle.textContent = "Set your budget for " + monthLabelFor(thisMonth);
+    budgetModalTitle.textContent = "Set your budget for " + monthLabelFor(thisMonth) + " (" + cycleRangeLabel(thisMonth) + ")";
     budgetInput.value = current !== null ? String(current).replace(".", ",") : "";
     budgetModalOverlay.classList.remove("hidden");
     budgetInput.focus();
@@ -461,7 +513,7 @@
   budgetModalSave.addEventListener("click", function () {
     var val = parseAmount(budgetInput.value);
     if (isNaN(val) || val < 0) return;
-    setBudgetForMonth(monthKeyFor(todayStr()), val);
+    setBudgetForMonth(financialMonthKeyFor(todayStr()), val);
     hideBudgetModal();
     renderHome();
   });
@@ -697,11 +749,12 @@
   // ---------- home dashboard ----------
   function renderHome() {
     var txs = loadTransactions();
-    var thisMonth = monthKeyFor(todayStr());
+    var thisMonth = financialMonthKeyFor(todayStr());
+    homeCycleNote.textContent = "Billing cycle: " + cycleRangeLabel(thisMonth);
 
     var moneyIn = 0, moneyOut = 0;
     txs.forEach(function (t) {
-      if (monthKeyFor(t.date) !== thisMonth) return;
+      if (financialMonthKeyFor(t.date) !== thisMonth) return;
       if (typeOf(t) === "income") moneyIn += t.amount;
       else moneyOut += t.amount;
     });
@@ -723,7 +776,8 @@
       statBudget.classList.add(remaining >= 0 ? "positive" : "negative");
     }
 
-    var categoryEntries = buildCategoryEntries(txs, thisMonth + "-01", monthEndDateStr(thisMonth), "expense");
+    var cycle = cycleBounds(thisMonth);
+    var categoryEntries = buildCategoryEntries(txs, cycle.start, cycle.end, "expense");
     renderDonut(
       { svg: document.getElementById("donutSvg"), legendList: document.getElementById("legendList"), donutTotal: document.getElementById("donutTotal"), donutWrap: document.getElementById("donutWrap") },
       categoryEntries,
@@ -773,8 +827,10 @@
   function renderAnnual() {
     var year = yearWithOffset(yearOffset);
     yearNavLabel.textContent = String(year);
-    var startDate = year + "-01-01";
-    var endDate = year + "-12-31";
+    yearNavSubLabel.textContent = financialYearRangeLabel(year);
+    var bounds = financialYearBounds(year);
+    var startDate = bounds.start;
+    var endDate = bounds.end;
 
     var txs = loadTransactions();
 
@@ -821,9 +877,10 @@
   function renderMonthly() {
     var monthKey = monthKeyWithOffset(monthOffset);
     monthNavLabel.textContent = monthLabelFor(monthKey);
+    monthNavSubLabel.textContent = cycleRangeLabel(monthKey);
 
     var txs = loadTransactions()
-      .filter(function (t) { return monthKeyFor(t.date) === monthKey; })
+      .filter(function (t) { return financialMonthKeyFor(t.date) === monthKey; })
       .sort(function (a, b) {
         if (a.date !== b.date) return a.date < b.date ? 1 : -1;
         return b.createdAt - a.createdAt;
