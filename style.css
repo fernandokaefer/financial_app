@@ -576,7 +576,7 @@ html, body {
   display: flex;
   border-top: 1px solid var(--border);
   background: var(--card);
-  padding: 6px 0 calc(env(safe-area-inset-bottom) + 6px);
+  padding: 3px 0 calc(env(safe-area-inset-bottom) + 3px);
   position: sticky;
   bottom: 0;
 }
@@ -592,9 +592,9 @@ html, body {
 }
 
 .tab .icon {
-  font-size: 24px;
+  font-size: 28px;
   line-height: 1;
-  padding: 3px 16px;
+  padding: 2px 16px;
   border-radius: 100px;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
