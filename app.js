@@ -101,6 +101,10 @@
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   }
 
+  function parseAmount(str) {
+    return parseFloat(String(str).trim().replace(",", "."));
+  }
+
   // ---------- theme ----------
   function loadTheme() {
     try { return localStorage.getItem(STORAGE_KEYS.theme) || null; }
@@ -443,7 +447,7 @@
     var thisMonth = monthKeyFor(todayStr());
     var current = getBudgetForMonth(thisMonth);
     budgetModalTitle.textContent = "Set your budget for " + monthLabelFor(thisMonth);
-    budgetInput.value = current !== null ? current : "";
+    budgetInput.value = current !== null ? String(current).replace(".", ",") : "";
     budgetModalOverlay.classList.remove("hidden");
     budgetInput.focus();
   }
@@ -455,7 +459,7 @@
     if (e.target === budgetModalOverlay) hideBudgetModal();
   });
   budgetModalSave.addEventListener("click", function () {
-    var val = parseFloat(budgetInput.value);
+    var val = parseAmount(budgetInput.value);
     if (isNaN(val) || val < 0) return;
     setBudgetForMonth(monthKeyFor(todayStr()), val);
     hideBudgetModal();
@@ -602,7 +606,7 @@
     e.preventDefault();
 
     var desc = descInput.value.trim();
-    var amount = parseFloat(amountInput.value);
+    var amount = parseAmount(amountInput.value);
     var category = categorySelect.value;
     var date = dateInput.value;
 
