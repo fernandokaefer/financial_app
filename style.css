@@ -596,7 +596,16 @@ html, body {
   line-height: 1;
   padding: 2px 16px;
   border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.tab .icon svg {
+  width: 28px;
+  height: 28px;
+  display: block;
 }
 
 .tab.active .icon {
