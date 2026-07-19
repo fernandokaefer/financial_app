@@ -688,10 +688,10 @@
     installmentToggle.checked = false;
     installmentBox.classList.add("hidden");
     installmentCount.value = "";
-    renderCategorySelect(category);
-    if (currentType === "expense") renderPaymentMethodSelect(paymentMethod);
-    descInput.focus();
+    renderCategorySelect();
+    renderPaymentMethodSelect();
     showToast(installments > 1 ? "Saved across " + installments + " months!" : "Saved!");
+    switchView("home");
   });
 
   // ---------- home dashboard ----------
