@@ -348,7 +348,6 @@
   var annualDonutSvg = document.getElementById("annualDonutSvg");
   var annualLegendList = document.getElementById("annualLegendList");
   var annualDonutTotal = document.getElementById("annualDonutTotal");
-  var annualDonutTotalLabel = document.getElementById("annualDonutTotalLabel");
   var annualDonutWrap = document.getElementById("annualDonutWrap");
 
   var categoryKindToggle = document.getElementById("categoryKindToggle");
@@ -782,7 +781,6 @@
       { svg: document.getElementById("donutSvg"), legendList: document.getElementById("legendList"), donutTotal: document.getElementById("donutTotal"), donutWrap: document.getElementById("donutWrap") },
       categoryEntries,
       moneyOut,
-      "spent",
       "No expenses this month."
     );
   }
@@ -803,7 +801,6 @@
       { svg: incomeDonutSvg, legendList: incomeLegendList, donutTotal: incomeDonutTotal, donutWrap: incomeDonutWrap },
       entries,
       total,
-      "received",
       "No income yet."
     );
     renderTransactionItems(incomeDetailList, sortTxsRecent(txs), renderIncomeDetail);
@@ -817,7 +814,6 @@
       { svg: expenseMethodDonutSvg, legendList: expenseMethodLegendList, donutTotal: expenseMethodDonutTotal, donutWrap: expenseMethodDonutWrap },
       entries,
       total,
-      "spent",
       "No expenses yet."
     );
     renderTransactionItems(expenseDetailList, sortTxsRecent(txs), renderExpenseDetail);
@@ -860,15 +856,12 @@
 
     var entries = buildCategoryEntries(txs, startDate, endDate, annualKind);
     var total = entries.reduce(function (s, e) { return s + e.amount; }, 0);
-    var label = annualKind === "income" ? "received" : "spent";
-    annualDonutTotalLabel.textContent = label;
     var emptyMsg = (annualKind === "income" ? "No income in " : "No expenses in ") + year + ".";
 
     renderDonut(
       { svg: annualDonutSvg, legendList: annualLegendList, donutTotal: annualDonutTotal, donutWrap: annualDonutWrap },
       entries,
       total,
-      label,
       emptyMsg
     );
   }
@@ -999,7 +992,7 @@
     ].join(" ");
   }
 
-  function renderDonut(els, entries, totalAmount, totalLabel, emptyMessage) {
+  function renderDonut(els, entries, totalAmount, emptyMessage) {
     var svg = els.svg;
     var legendList = els.legendList;
     var donutTotal = els.donutTotal;
