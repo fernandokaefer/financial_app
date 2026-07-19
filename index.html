@@ -1,79 +1,250 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Gastos">
+<meta name="apple-mobile-web-app-title" content="Money Tracker">
 <meta name="theme-color" content="#0e0e12">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
-<title>Gastos</title>
+<title>Money Tracker</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="app">
 
   <header class="topbar">
-    <h1 id="pageTitle">Lançar gasto</h1>
+    <h1 id="pageTitle">Add Transaction</h1>
+    <div class="topbar-actions">
+      <button type="button" id="historyBtn" class="icon-action-btn hidden" aria-label="History">☰</button>
+      <button type="button" id="settingsBtn" class="icon-action-btn hidden" aria-label="Settings">⚙</button>
+    </div>
   </header>
 
-  <main id="view-lancar" class="view active">
+  <main id="view-add" class="view">
     <form id="expenseForm" autocomplete="off">
+      <div class="segmented" id="typeToggle">
+        <button type="button" class="segmented-btn active" data-type="expense">Expense</button>
+        <button type="button" class="segmented-btn" data-type="income">Income</button>
+      </div>
+
       <label class="field">
-        <span>Descrição</span>
-        <input type="text" id="descInput" placeholder="Ex: Gasolina" required maxlength="60">
+        <span>Description</span>
+        <input type="text" id="descInput" placeholder="e.g. Gas" required maxlength="60">
       </label>
 
       <label class="field">
-        <span>Valor (R$)</span>
-        <input type="number" id="amountInput" placeholder="0,00" step="0.01" min="0" inputmode="decimal" required>
+        <span>Amount (R$)</span>
+        <input type="number" id="amountInput" placeholder="0.00" step="0.01" min="0" inputmode="decimal" required>
       </label>
 
       <label class="field">
-        <span>Categoria</span>
+        <span>Category</span>
         <select id="categorySelect" required></select>
       </label>
 
       <div id="newCategoryBox" class="new-category-box hidden">
-        <input type="text" id="newCategoryInput" placeholder="Nome da nova categoria" maxlength="30">
-        <button type="button" id="confirmNewCategoryBtn" class="small-btn">Adicionar</button>
+        <input type="text" id="newCategoryInput" placeholder="New category name" maxlength="30">
+        <button type="button" id="confirmNewCategoryBtn" class="small-btn">Add</button>
       </div>
 
+      <label class="field" id="paymentMethodField">
+        <span>Payment Method</span>
+        <select id="paymentMethodSelect" required></select>
+      </label>
+
+      <div id="newPaymentMethodBox" class="new-category-box hidden">
+        <input type="text" id="newPaymentMethodInput" placeholder="New payment method" maxlength="30">
+        <button type="button" id="confirmNewPaymentMethodBtn" class="small-btn">Add</button>
+      </div>
+
+      <div class="checkbox-field" id="installmentToggleField">
+        <label class="checkbox-label">
+          <input type="checkbox" id="installmentToggle">
+          <span>Split into installments</span>
+        </label>
+      </div>
+
+      <label class="field hidden" id="installmentBox">
+        <span>Number of installments</span>
+        <input type="number" id="installmentCount" min="2" max="60" step="1" placeholder="e.g. 12" inputmode="numeric">
+      </label>
+
       <label class="field">
-        <span>Data</span>
+        <span>Date</span>
         <input type="date" id="dateInput" required>
       </label>
 
-      <button type="submit" class="primary-btn">Salvar gasto</button>
+      <button type="submit" class="primary-btn">Save</button>
     </form>
     <div id="toast" class="toast hidden"></div>
   </main>
 
-  <main id="view-historico" class="view">
+  <main id="view-history" class="view">
     <div id="summaryBar" class="summary-bar"></div>
     <div id="historyList" class="history-list"></div>
   </main>
 
-  <main id="view-categorias" class="view">
+  <main id="view-home" class="view active">
+    <div class="stats-grid">
+      <div class="stat-box tappable" id="moneyInBox">
+        <div class="stat-label">Money In <span class="stat-period">(this month)</span></div>
+        <div class="stat-value" id="statMoneyIn">R$ 0.00</div>
+      </div>
+      <div class="stat-box tappable" id="moneyOutBox">
+        <div class="stat-label">Money Out <span class="stat-period">(this month)</span></div>
+        <div class="stat-value" id="statMoneyOut">R$ 0.00</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Difference <span class="stat-period">(this month)</span></div>
+        <div class="stat-value" id="statDifference">R$ 0.00</div>
+      </div>
+      <div class="stat-box tappable" id="budgetBox">
+        <div class="stat-label">Budget Left <span class="stat-period">(this month)</span></div>
+        <div class="stat-value" id="statBudget">Set budget</div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-title">Expenses by Category <span class="stat-period">(this month)</span></div>
+      <div class="donut-wrap" id="donutWrap">
+        <svg id="donutSvg" viewBox="0 0 100 100"></svg>
+        <div class="donut-center">
+          <div class="donut-total" id="donutTotal">R$ 0.00</div>
+          <div class="donut-total-label">spent</div>
+        </div>
+      </div>
+      <ul class="legend-list" id="legendList"></ul>
+    </div>
+
+    <button type="button" id="manageCategoriesLink" class="link-btn">Manage Categories →</button>
+  </main>
+
+  <main id="view-income-detail" class="view">
+    <button type="button" id="incomeDetailBackBtn" class="link-btn back-link">← Back</button>
+
+    <div class="chart-card">
+      <div class="chart-card-title">Income by Category <span class="stat-period">(all time)</span></div>
+      <div class="donut-wrap" id="incomeDonutWrap">
+        <svg id="incomeDonutSvg" viewBox="0 0 100 100"></svg>
+        <div class="donut-center">
+          <div class="donut-total" id="incomeDonutTotal">R$ 0.00</div>
+          <div class="donut-total-label">received</div>
+        </div>
+      </div>
+      <ul class="legend-list" id="incomeLegendList"></ul>
+    </div>
+
+    <div id="incomeDetailList" class="history-list"></div>
+  </main>
+
+  <main id="view-expense-detail" class="view">
+    <button type="button" id="expenseDetailBackBtn" class="link-btn back-link">← Back</button>
+
+    <div class="chart-card">
+      <div class="chart-card-title">Expenses by Payment Method <span class="stat-period">(all time)</span></div>
+      <div class="donut-wrap" id="expenseMethodDonutWrap">
+        <svg id="expenseMethodDonutSvg" viewBox="0 0 100 100"></svg>
+        <div class="donut-center">
+          <div class="donut-total" id="expenseMethodDonutTotal">R$ 0.00</div>
+          <div class="donut-total-label">spent</div>
+        </div>
+      </div>
+      <ul class="legend-list" id="expenseMethodLegendList"></ul>
+    </div>
+
+    <div id="expenseDetailList" class="history-list"></div>
+  </main>
+
+  <main id="view-periods" class="view">
+    <div class="segmented" id="periodToggle">
+      <button type="button" class="segmented-btn active" data-period="monthly">Monthly</button>
+      <button type="button" class="segmented-btn" data-period="annual">Annual</button>
+    </div>
+
+    <div id="periodMonthlySection">
+      <div class="month-nav">
+        <button type="button" id="monthPrevBtn" class="month-nav-btn">‹</button>
+        <div class="month-nav-label" id="monthNavLabel">MONTH YEAR</div>
+        <button type="button" id="monthNextBtn" class="month-nav-btn">›</button>
+      </div>
+      <div id="monthSummaryBar" class="summary-bar"></div>
+      <div id="monthList" class="history-list"></div>
+    </div>
+
+    <div id="periodAnnualSection" class="hidden">
+      <div class="month-nav">
+        <button type="button" id="yearPrevBtn" class="month-nav-btn">‹</button>
+        <div class="month-nav-label" id="yearNavLabel">YEAR</div>
+        <button type="button" id="yearNextBtn" class="month-nav-btn">›</button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">Money In <span class="stat-period">(year)</span></div>
+          <div class="stat-value" id="annualMoneyIn">R$ 0.00</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Money Out <span class="stat-period">(year)</span></div>
+          <div class="stat-value" id="annualMoneyOut">R$ 0.00</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Difference <span class="stat-period">(year)</span></div>
+          <div class="stat-value" id="annualDifference">R$ 0.00</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Avg. Budget <span class="stat-period">(year)</span></div>
+          <div class="stat-value" id="annualBudgetAvg">No data</div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card-title-row">
+          <div class="chart-card-title">By Category</div>
+          <div class="segmented segmented-sm" id="annualTypeToggle">
+            <button type="button" class="segmented-btn active" data-type="expense">Expenses</button>
+            <button type="button" class="segmented-btn" data-type="income">Income</button>
+          </div>
+        </div>
+        <div class="donut-wrap" id="annualDonutWrap">
+          <svg id="annualDonutSvg" viewBox="0 0 100 100"></svg>
+          <div class="donut-center">
+            <div class="donut-total" id="annualDonutTotal">R$ 0.00</div>
+            <div class="donut-total-label" id="annualDonutTotalLabel">spent</div>
+          </div>
+        </div>
+        <ul class="legend-list" id="annualLegendList"></ul>
+      </div>
+    </div>
+  </main>
+
+  <main id="view-categories" class="view">
+    <button type="button" id="backToHomeBtn" class="link-btn back-link">← Back</button>
+
+    <div class="segmented" id="categoryKindToggle">
+      <button type="button" class="segmented-btn active" data-kind="expense">Expense Categories</button>
+      <button type="button" class="segmented-btn" data-kind="income">Income Categories</button>
+    </div>
+
     <form id="categoryForm" autocomplete="off">
-      <input type="text" id="categoryNameInput" placeholder="Nova categoria" required maxlength="30">
-      <button type="submit" class="small-btn">Adicionar</button>
+      <input type="text" id="categoryNameInput" placeholder="New category" required maxlength="30">
+      <button type="submit" class="small-btn">Add</button>
     </form>
     <ul id="categoryList" class="category-list"></ul>
   </main>
 
   <nav class="tabbar">
-    <button data-view="lancar" class="tab active">
-      <span class="icon">＋</span><span class="label">Lançar</span>
+    <button data-view="add" class="tab">
+      <span class="icon">＋</span>
     </button>
-    <button data-view="historico" class="tab">
-      <span class="icon">☰</span><span class="label">Histórico</span>
+    <button data-view="home" class="tab active">
+      <span class="icon">⌂</span>
     </button>
-    <button data-view="categorias" class="tab">
-      <span class="icon">◆</span><span class="label">Categorias</span>
+    <button data-view="periods" class="tab">
+      <span class="icon">▤</span>
     </button>
   </nav>
 </div>
@@ -82,8 +253,31 @@
   <div class="modal">
     <p id="modalMessage"></p>
     <div class="modal-actions">
-      <button id="modalCancel" class="modal-btn">Cancelar</button>
-      <button id="modalConfirm" class="modal-btn danger">Confirmar</button>
+      <button id="modalCancel" class="modal-btn">Cancel</button>
+      <button id="modalConfirm" class="modal-btn danger">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="budgetModalOverlay" class="modal-overlay hidden">
+  <div class="modal">
+    <p id="budgetModalTitle">Set your monthly budget</p>
+    <input type="number" id="budgetInput" class="modal-input" step="0.01" min="0" placeholder="0.00">
+    <div class="modal-actions">
+      <button id="budgetModalCancel" class="modal-btn">Cancel</button>
+      <button id="budgetModalSave" class="modal-btn primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="settingsOverlay" class="sheet-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title">Settings</p>
+    <div class="sheet-label">Appearance</div>
+    <div class="segmented" id="themeToggle">
+      <button type="button" class="segmented-btn" data-theme="light">Light</button>
+      <button type="button" class="segmented-btn" data-theme="dark">Dark</button>
     </div>
   </div>
 </div>

@@ -1,6 +1,6 @@
 {
-  "name": "Controle de Gastos",
-  "short_name": "Gastos",
+  "name": "Money Tracker",
+  "short_name": "Money",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
