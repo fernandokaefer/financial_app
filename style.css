@@ -129,6 +129,7 @@ html, body {
   font-size: 27px;
   line-height: 1;
   padding: 4px;
+  margin-top: -4px;
 }
 
 .icon-action-btn:active { opacity: 0.6; }
