@@ -1,6 +1,6 @@
 {
-  "name": "Money Tracker",
-  "short_name": "Money",
+  "name": "Financial",
+  "short_name": "Financial",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
