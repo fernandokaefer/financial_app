@@ -124,9 +124,10 @@
 
   <main id="view-income-detail" class="view">
     <button type="button" id="incomeDetailBackBtn" class="link-btn back-link">← Back</button>
+    <div class="cycle-note" id="incomeDetailCycleNote"></div>
 
     <div class="chart-card">
-      <div class="chart-card-title">Income by Category <span class="stat-period">(all time)</span></div>
+      <div class="chart-card-title">Income by Category <span class="stat-period">(this cycle)</span></div>
       <div class="donut-wrap" id="incomeDonutWrap">
         <svg id="incomeDonutSvg" viewBox="0 0 100 100"></svg>
         <div class="donut-center">
@@ -141,9 +142,10 @@
 
   <main id="view-expense-detail" class="view">
     <button type="button" id="expenseDetailBackBtn" class="link-btn back-link">← Back</button>
+    <div class="cycle-note" id="expenseDetailCycleNote"></div>
 
     <div class="chart-card">
-      <div class="chart-card-title">Expenses by Payment Method <span class="stat-period">(all time)</span></div>
+      <div class="chart-card-title">Expenses by Payment Method <span class="stat-period">(this cycle)</span></div>
       <div class="donut-wrap" id="expenseMethodDonutWrap">
         <svg id="expenseMethodDonutSvg" viewBox="0 0 100 100"></svg>
         <div class="donut-center">

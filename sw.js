@@ -1,4 +1,4 @@
-var CACHE_NAME = "gastos-v22";
+var CACHE_NAME = "gastos-v23";
 var ASSETS = [
   "./",
   "./index.html",
@@ -26,9 +26,14 @@ self.addEventListener("activate", function (event) {
 });
 
 self.addEventListener("fetch", function (event) {
+  if (event.request.method !== "GET") return;
   event.respondWith(
-    caches.match(event.request).then(function (cached) {
-      return cached || fetch(event.request);
+    fetch(event.request).then(function (response) {
+      var copy = response.clone();
+      caches.open(CACHE_NAME).then(function (cache) { cache.put(event.request, copy); });
+      return response;
+    }).catch(function () {
+      return caches.match(event.request);
     })
   );
 });

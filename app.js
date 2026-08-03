@@ -12,8 +12,6 @@
   var NEW_CATEGORY_VALUE = "__new__";
   var NEW_PAYMENT_METHOD_VALUE = "__new_payment_method__";
   var SVG_NS = "http://www.w3.org/2000/svg";
-  var ALL_TIME_START = "0000-01-01";
-  var ALL_TIME_END = "9999-12-31";
 
   // ---------- storage ----------
   function categoryStorageKey(kind) {
@@ -102,7 +100,18 @@
   }
 
   function parseAmount(str) {
-    return parseFloat(String(str).trim().replace(",", "."));
+    str = String(str).trim();
+    if (!str) return NaN;
+    str = str.replace(/[^0-9.,-]/g, "");
+    var lastComma = str.lastIndexOf(",");
+    var lastDot = str.lastIndexOf(".");
+    if (lastComma !== -1 && lastDot !== -1) {
+      if (lastComma > lastDot) str = str.replace(/\./g, "").replace(",", ".");
+      else str = str.replace(/,/g, "");
+    } else if (lastComma !== -1) {
+      str = str.replace(",", ".");
+    }
+    return parseFloat(str);
   }
 
   // ---------- theme ----------
@@ -312,6 +321,7 @@
   var backToHomeBtn = document.getElementById("backToHomeBtn");
 
   var incomeDetailBackBtn = document.getElementById("incomeDetailBackBtn");
+  var incomeDetailCycleNote = document.getElementById("incomeDetailCycleNote");
   var incomeDonutSvg = document.getElementById("incomeDonutSvg");
   var incomeLegendList = document.getElementById("incomeLegendList");
   var incomeDonutTotal = document.getElementById("incomeDonutTotal");
@@ -319,6 +329,7 @@
   var incomeDetailList = document.getElementById("incomeDetailList");
 
   var expenseDetailBackBtn = document.getElementById("expenseDetailBackBtn");
+  var expenseDetailCycleNote = document.getElementById("expenseDetailCycleNote");
   var expenseMethodDonutSvg = document.getElementById("expenseMethodDonutSvg");
   var expenseMethodLegendList = document.getElementById("expenseMethodLegendList");
   var expenseMethodDonutTotal = document.getElementById("expenseMethodDonutTotal");
@@ -514,7 +525,11 @@
   });
   budgetModalSave.addEventListener("click", function () {
     var val = parseAmount(budgetInput.value);
-    if (isNaN(val) || val < 0) return;
+    if (isNaN(val) || val < 0) {
+      showToast("Enter a valid amount.");
+      budgetInput.focus();
+      return;
+    }
     setBudgetForMonth(financialMonthKeyFor(todayStr()), val);
     hideBudgetModal();
     renderHome();
@@ -727,11 +742,18 @@
     var category = categorySelect.value;
     var date = dateInput.value;
 
-    if (!desc || isNaN(amount) || amount <= 0 || !date) return;
+    if (!desc || !date) return;
+
+    if (isNaN(amount) || amount <= 0) {
+      showToast("Enter a valid amount.");
+      amountInput.focus();
+      return;
+    }
 
     if (category === NEW_CATEGORY_VALUE || !category) {
       var pending = newCategoryInput.value.trim();
       if (!pending) {
+        showToast("Enter a category name.");
         newCategoryInput.focus();
         return;
       }
@@ -744,6 +766,7 @@
       if (paymentMethod === NEW_PAYMENT_METHOD_VALUE || !paymentMethod) {
         var pendingMethod = newPaymentMethodInput.value.trim();
         if (!pendingMethod) {
+          showToast("Enter a payment method name.");
           newPaymentMethodInput.focus();
           return;
         }
@@ -755,6 +778,7 @@
     if (currentType === "expense" && installmentToggle.checked) {
       installments = parseInt(installmentCount.value, 10);
       if (!installments || installments < 2) {
+        showToast("Enter a valid number of installments (2–60).");
         installmentCount.focus();
         return;
       }
@@ -860,27 +884,39 @@
   }
 
   function renderIncomeDetail() {
-    var txs = loadTransactions().filter(function (t) { return typeOf(t) === "income"; });
+    var thisMonth = financialMonthKeyFor(todayStr());
+    var cycle = cycleBounds(thisMonth);
+    incomeDetailCycleNote.textContent = cycleRangeLabel(thisMonth);
+
+    var txs = loadTransactions().filter(function (t) {
+      return typeOf(t) === "income" && t.date >= cycle.start && t.date <= cycle.end;
+    });
     var total = txs.reduce(function (s, t) { return s + t.amount; }, 0);
-    var entries = buildCategoryEntries(txs, ALL_TIME_START, ALL_TIME_END, "income");
+    var entries = buildCategoryEntries(txs, cycle.start, cycle.end, "income");
     renderDonut(
       { svg: incomeDonutSvg, legendList: incomeLegendList, donutTotal: incomeDonutTotal, donutWrap: incomeDonutWrap },
       entries,
       total,
-      "No income yet."
+      "No income this cycle."
     );
     renderTransactionItems(incomeDetailList, sortTxsRecent(txs), renderIncomeDetail);
   }
 
   function renderExpenseDetail() {
-    var txs = loadTransactions().filter(function (t) { return typeOf(t) === "expense"; });
+    var thisMonth = financialMonthKeyFor(todayStr());
+    var cycle = cycleBounds(thisMonth);
+    expenseDetailCycleNote.textContent = cycleRangeLabel(thisMonth);
+
+    var txs = loadTransactions().filter(function (t) {
+      return typeOf(t) === "expense" && t.date >= cycle.start && t.date <= cycle.end;
+    });
     var total = txs.reduce(function (s, t) { return s + t.amount; }, 0);
-    var entries = buildPaymentMethodEntries(txs, ALL_TIME_START, ALL_TIME_END);
+    var entries = buildPaymentMethodEntries(txs, cycle.start, cycle.end);
     renderDonut(
       { svg: expenseMethodDonutSvg, legendList: expenseMethodLegendList, donutTotal: expenseMethodDonutTotal, donutWrap: expenseMethodDonutWrap },
       entries,
       total,
-      "No expenses yet."
+      "No expenses this cycle."
     );
     renderTransactionItems(expenseDetailList, sortTxsRecent(txs), renderExpenseDetail);
   }
@@ -963,21 +999,7 @@
 
     var html = "";
     txs.forEach(function (t) {
-      var isIncome = typeOf(t) === "income";
-      var sign = isIncome ? "+" : "-";
-      var amountClass = isIncome ? "positive" : "negative";
-      html += '<div class="expense-item" data-id="' + t.id + '">' +
-        '<div class="expense-info">' +
-          '<div class="expense-desc">' + escapeHtml(t.desc) + '</div>' +
-          '<div class="expense-meta"><span class="badge">' + escapeHtml(t.category) + '</span>' +
-            (t.paymentMethod ? '<span class="badge">' + escapeHtml(t.paymentMethod) + '</span>' : '') +
-            '<span>' + formatDateShort(t.date) + '</span></div>' +
-        '</div>' +
-        '<div class="expense-right">' +
-          '<span class="expense-amount ' + amountClass + '">' + sign + formatCurrency(t.amount) + '</span>' +
-          '<button class="icon-btn delete-month-expense" data-id="' + t.id + '">✕</button>' +
-        '</div>' +
-      '</div>';
+      html += expenseItemHtml(t, "delete-month-expense");
     });
     monthList.innerHTML = html;
 
@@ -1228,21 +1250,7 @@
       html += '<div class="week-header"><span>Week of ' + weekLabelFor(key) + '</span>' +
               '<span class="week-total">' + formatCurrency(weekTotal) + '</span></div>';
       items.forEach(function (t) {
-        var isIncome = typeOf(t) === "income";
-        var sign = isIncome ? "+" : "-";
-        var amountClass = isIncome ? "positive" : "negative";
-        html += '<div class="expense-item" data-id="' + t.id + '">' +
-          '<div class="expense-info">' +
-            '<div class="expense-desc">' + escapeHtml(t.desc) + '</div>' +
-            '<div class="expense-meta"><span class="badge">' + escapeHtml(t.category) + '</span>' +
-            (t.paymentMethod ? '<span class="badge">' + escapeHtml(t.paymentMethod) + '</span>' : '') +
-            '<span>' + formatDateShort(t.date) + '</span></div>' +
-          '</div>' +
-          '<div class="expense-right">' +
-            '<span class="expense-amount ' + amountClass + '">' + sign + formatCurrency(t.amount) + '</span>' +
-            '<button class="icon-btn delete-expense" data-id="' + t.id + '"' + (t.installmentGroup ? ' data-group="1"' : '') + '>✕</button>' +
-          '</div>' +
-        '</div>';
+        html += expenseItemHtml(t, "delete-expense", t.installmentGroup ? ' data-group="1"' : '');
       });
       html += '</div>';
     });
@@ -1272,6 +1280,24 @@
     return div.innerHTML;
   }
 
+  function expenseItemHtml(t, deleteClass, extraAttrs) {
+    var isIncome = typeOf(t) === "income";
+    var sign = isIncome ? "+" : "-";
+    var amountClass = isIncome ? "positive" : "negative";
+    return '<div class="expense-item" data-id="' + t.id + '">' +
+      '<div class="expense-info">' +
+        '<div class="expense-desc">' + escapeHtml(t.desc) + '</div>' +
+        '<div class="expense-meta"><span class="badge">' + escapeHtml(t.category) + '</span>' +
+          (t.paymentMethod ? '<span class="badge">' + escapeHtml(t.paymentMethod) + '</span>' : '') +
+          '<span>' + formatDateShort(t.date) + '</span></div>' +
+      '</div>' +
+      '<div class="expense-right">' +
+        '<span class="expense-amount ' + amountClass + '">' + sign + formatCurrency(t.amount) + '</span>' +
+        '<button class="icon-btn ' + deleteClass + '" data-id="' + t.id + '"' + (extraAttrs || '') + ' aria-label="Delete transaction">✕</button>' +
+      '</div>' +
+    '</div>';
+  }
+
   function renderTransactionItems(container, txs, onDeleted) {
     if (txs.length === 0) {
       container.innerHTML = '<div class="empty-state">No transactions yet.</div>';
@@ -1279,21 +1305,7 @@
     }
     var html = "";
     txs.forEach(function (t) {
-      var isIncome = typeOf(t) === "income";
-      var sign = isIncome ? "+" : "-";
-      var amountClass = isIncome ? "positive" : "negative";
-      html += '<div class="expense-item" data-id="' + t.id + '">' +
-        '<div class="expense-info">' +
-          '<div class="expense-desc">' + escapeHtml(t.desc) + '</div>' +
-          '<div class="expense-meta"><span class="badge">' + escapeHtml(t.category) + '</span>' +
-            (t.paymentMethod ? '<span class="badge">' + escapeHtml(t.paymentMethod) + '</span>' : '') +
-            '<span>' + formatDateShort(t.date) + '</span></div>' +
-        '</div>' +
-        '<div class="expense-right">' +
-          '<span class="expense-amount ' + amountClass + '">' + sign + formatCurrency(t.amount) + '</span>' +
-          '<button class="icon-btn delete-tx" data-id="' + t.id + '">✕</button>' +
-        '</div>' +
-      '</div>';
+      html += expenseItemHtml(t, "delete-tx");
     });
     container.innerHTML = html;
 
