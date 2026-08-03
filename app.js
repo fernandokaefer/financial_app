@@ -23,6 +23,7 @@
   }
   function saveCategories(kind, cats) {
     localStorage.setItem(categoryStorageKey(kind), JSON.stringify(cats));
+    scheduleCloudSave();
   }
   function addCategory(kind, name) {
     var cats = loadCategories(kind);
@@ -56,6 +57,7 @@
   }
   function savePaymentMethods(methods) {
     localStorage.setItem(STORAGE_KEYS.paymentMethods, JSON.stringify(methods));
+    scheduleCloudSave();
   }
   function addPaymentMethod(name) {
     var methods = loadPaymentMethods();
@@ -73,6 +75,7 @@
   }
   function saveTransactions(txs) {
     localStorage.setItem(STORAGE_KEYS.expenses, JSON.stringify(txs));
+    scheduleCloudSave();
   }
   function loadBudgetMap() {
     try {
@@ -83,6 +86,7 @@
   }
   function saveBudgetMap(map) {
     localStorage.setItem(STORAGE_KEYS.budget, JSON.stringify(map));
+    scheduleCloudSave();
   }
   function getBudgetForMonth(monthKey) {
     var map = loadBudgetMap();
@@ -121,6 +125,7 @@
   }
   function saveTheme(theme) {
     localStorage.setItem(STORAGE_KEYS.theme, theme);
+    scheduleCloudSave();
   }
   function systemTheme() {
     return (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
@@ -374,6 +379,16 @@
   var importBackupBtn = document.getElementById("importBackupBtn");
   var importBackupInput = document.getElementById("importBackupInput");
 
+  var cloudAuthForm = document.getElementById("cloudAuthForm");
+  var cloudSignedInBox = document.getElementById("cloudSignedInBox");
+  var cloudStatusText = document.getElementById("cloudStatusText");
+  var cloudEmailInput = document.getElementById("cloudEmailInput");
+  var cloudPasswordInput = document.getElementById("cloudPasswordInput");
+  var cloudSignInBtn = document.getElementById("cloudSignInBtn");
+  var cloudSignUpBtn = document.getElementById("cloudSignUpBtn");
+  var cloudSignOutBtn = document.getElementById("cloudSignOutBtn");
+  var cloudRestoreBtn = document.getElementById("cloudRestoreBtn");
+
   var modalOverlay = document.getElementById("modalOverlay");
   var modalMessage = document.getElementById("modalMessage");
   var modalCancel = document.getElementById("modalCancel");
@@ -562,11 +577,10 @@
   });
 
   // ---------- backup / restore ----------
-  function exportBackup() {
-    var exportedAt = new Date().toISOString();
-    var data = {
+  function buildBackupPayload() {
+    return {
       version: 1,
-      exportedAt: exportedAt,
+      exportedAt: new Date().toISOString(),
       expenses: loadTransactions(),
       categories: loadCategories("expense"),
       incomeCategories: loadCategories("income"),
@@ -574,12 +588,15 @@
       budget: loadBudgetMap(),
       theme: loadTheme()
     };
+  }
 
+  function exportBackup() {
+    var data = buildBackupPayload();
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
     a.href = url;
-    a.download = "money-tracker-backup-" + exportedAt.slice(0, 10) + ".json";
+    a.download = "money-tracker-backup-" + data.exportedAt.slice(0, 10) + ".json";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -622,6 +639,94 @@
     var file = importBackupInput.files[0];
     if (file) importBackupFile(file);
     importBackupInput.value = "";
+  });
+
+  // ---------- cloud backup (Firebase) ----------
+  function scheduleCloudSave() {
+    if (!window.CloudSync || !window.CloudSync.isSignedIn()) return;
+    window.CloudSync.queueSave(buildBackupPayload);
+  }
+
+  function isLocalDataEmpty() {
+    return loadTransactions().length === 0 &&
+      loadCategories("expense").length === 0 &&
+      loadCategories("income").length === 0;
+  }
+
+  var lastCloudSyncAt = null;
+
+  function refreshCloudStatusText() {
+    if (!window.CloudSync || !window.CloudSync.isSignedIn()) return;
+    var lastText = lastCloudSyncAt
+      ? new Date(lastCloudSyncAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+      : "just now";
+    cloudStatusText.innerHTML = 'Signed in as <span class="ok">' + escapeHtml(window.CloudSync.currentEmail()) + '</span><br>Last synced: ' + lastText;
+  }
+
+  function updateCloudStatusUI(user) {
+    cloudAuthForm.classList.toggle("hidden", !!user);
+    cloudSignedInBox.classList.toggle("hidden", !user);
+    if (user) refreshCloudStatusText();
+  }
+
+  function whenCloudSyncReady(cb) {
+    if (window.CloudSync) { cb(); return; }
+    window.addEventListener("cloudsync:ready", cb, { once: true });
+  }
+
+  cloudSignUpBtn.addEventListener("click", function () {
+    var email = cloudEmailInput.value.trim();
+    var password = cloudPasswordInput.value;
+    if (!email || !password) { showToast("Enter email and password."); return; }
+    window.CloudSync.signUp(email, password).then(function () {
+      cloudPasswordInput.value = "";
+      showToast("Account created — backing up now.");
+    }).catch(function (err) { showToast(err.message); });
+  });
+
+  cloudSignInBtn.addEventListener("click", function () {
+    var email = cloudEmailInput.value.trim();
+    var password = cloudPasswordInput.value;
+    if (!email || !password) { showToast("Enter email and password."); return; }
+    window.CloudSync.signIn(email, password).then(function () {
+      cloudPasswordInput.value = "";
+    }).catch(function (err) { showToast(err.message); });
+  });
+
+  cloudSignOutBtn.addEventListener("click", function () {
+    window.CloudSync.signOut();
+  });
+
+  cloudRestoreBtn.addEventListener("click", function () {
+    window.CloudSync.fetchCloudBackup().then(function (data) {
+      if (!data) { showToast("No cloud backup found yet."); return; }
+      showConfirm("Restore from your cloud backup? This will replace all current data on this device.", function () {
+        restoreBackup(data);
+      });
+    }).catch(function (err) { showToast(err.message); });
+  });
+
+  window.addEventListener("cloudsync:saved", function (e) {
+    lastCloudSyncAt = e.detail.at;
+    refreshCloudStatusText();
+  });
+
+  window.addEventListener("cloudsync:error", function (e) {
+    showToast("Cloud sync error: " + e.detail.message);
+  });
+
+  whenCloudSyncReady(function () {
+    window.CloudSync.onAuthChange(function (user) {
+      updateCloudStatusUI(user);
+      if (!user) return;
+      if (isLocalDataEmpty()) {
+        window.CloudSync.fetchCloudBackup().then(function (data) {
+          if (data) restoreBackup(data);
+        });
+      } else {
+        scheduleCloudSave();
+      }
+    });
   });
 
   // ---------- toast ----------

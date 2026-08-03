@@ -292,11 +292,29 @@
       <button type="button" id="importBackupBtn" class="small-btn">Import Backup</button>
     </div>
     <input type="file" id="importBackupInput" accept="application/json,.json" class="hidden">
+
+    <div class="sheet-label">Cloud Backup</div>
+    <div id="cloudAuthForm">
+      <input type="email" id="cloudEmailInput" class="sheet-input" placeholder="Email" autocomplete="email">
+      <input type="password" id="cloudPasswordInput" class="sheet-input" placeholder="Password" autocomplete="current-password">
+      <div class="button-row">
+        <button type="button" id="cloudSignInBtn" class="small-btn">Sign In</button>
+        <button type="button" id="cloudSignUpBtn" class="small-btn">Create Account</button>
+      </div>
+    </div>
+    <div id="cloudSignedInBox" class="hidden">
+      <div class="cloud-status" id="cloudStatusText"></div>
+      <div class="button-row">
+        <button type="button" id="cloudRestoreBtn" class="small-btn">Restore from Cloud</button>
+        <button type="button" id="cloudSignOutBtn" class="small-btn">Sign Out</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <div id="toast" class="toast hidden"></div>
 
+<script type="module" src="firebase-sync.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

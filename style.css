@@ -732,3 +732,26 @@ html, body {
   flex: 1;
   text-align: center;
 }
+
+.sheet-input {
+  width: 100%;
+  font-size: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  margin-bottom: 10px;
+  outline: none;
+}
+
+.sheet-input:focus { border-color: var(--accent); }
+
+.cloud-status {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.cloud-status .ok { color: var(--accent); font-weight: 600; }
