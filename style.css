@@ -105,7 +105,7 @@ html, body {
 }
 
 .topbar h1 {
-  margin: 2px 0 0;
+  margin: 0;
   font-size: 22px;
   font-weight: 700;
   flex: 1;
@@ -129,7 +129,6 @@ html, body {
   font-size: 27px;
   line-height: 1;
   padding: 4px;
-  margin-top: -8px;
 }
 
 .icon-action-btn:active { opacity: 0.6; }
