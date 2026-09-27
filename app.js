@@ -7,7 +7,8 @@
     expenses: "gastos_expenses",
     budget: "gastos_budget",
     theme: "gastos_theme",
-    paymentMethods: "gastos_payment_methods"
+    paymentMethods: "gastos_payment_methods",
+    hideBalance: "gastos_hide_balance"
   };
   var NEW_CATEGORY_VALUE = "__new__";
   var NEW_PAYMENT_METHOD_VALUE = "__new_payment_method__";
@@ -314,32 +315,7 @@
   var summaryBar = document.getElementById("summaryBar");
   var historyList = document.getElementById("historyList");
 
-  var statMoneyIn = document.getElementById("statMoneyIn");
-  var statMoneyOut = document.getElementById("statMoneyOut");
-  var statDifference = document.getElementById("statDifference");
-  var statBudget = document.getElementById("statBudget");
-  var budgetBox = document.getElementById("budgetBox");
-  var moneyInBox = document.getElementById("moneyInBox");
-  var moneyOutBox = document.getElementById("moneyOutBox");
-  var homeCycleNote = document.getElementById("homeCycleNote");
-  var manageCategoriesLink = document.getElementById("manageCategoriesLink");
   var backToHomeBtn = document.getElementById("backToHomeBtn");
-
-  var incomeDetailBackBtn = document.getElementById("incomeDetailBackBtn");
-  var incomeDetailCycleNote = document.getElementById("incomeDetailCycleNote");
-  var incomeDonutSvg = document.getElementById("incomeDonutSvg");
-  var incomeLegendList = document.getElementById("incomeLegendList");
-  var incomeDonutTotal = document.getElementById("incomeDonutTotal");
-  var incomeDonutWrap = document.getElementById("incomeDonutWrap");
-  var incomeDetailList = document.getElementById("incomeDetailList");
-
-  var expenseDetailBackBtn = document.getElementById("expenseDetailBackBtn");
-  var expenseDetailCycleNote = document.getElementById("expenseDetailCycleNote");
-  var expenseMethodDonutSvg = document.getElementById("expenseMethodDonutSvg");
-  var expenseMethodLegendList = document.getElementById("expenseMethodLegendList");
-  var expenseMethodDonutTotal = document.getElementById("expenseMethodDonutTotal");
-  var expenseMethodDonutWrap = document.getElementById("expenseMethodDonutWrap");
-  var expenseDetailList = document.getElementById("expenseDetailList");
 
   var periodToggle = document.getElementById("periodToggle");
   var periodMonthlySection = document.getElementById("periodMonthlySection");
@@ -371,8 +347,29 @@
   var categoryNameInput = document.getElementById("categoryNameInput");
   var categoryList = document.getElementById("categoryList");
 
-  var historyBtn = document.getElementById("historyBtn");
-  var settingsBtn = document.getElementById("settingsBtn");
+  var menuBtn = document.getElementById("menuBtn");
+  var hideBalanceBtn = document.getElementById("hideBalanceBtn");
+  var menuOverlay = document.getElementById("menuOverlay");
+  var menuHistoryBtn = document.getElementById("menuHistoryBtn");
+  var menuCategoriesBtn = document.getElementById("menuCategoriesBtn");
+  var menuBudgetBtn = document.getElementById("menuBudgetBtn");
+  var menuSettingsBtn = document.getElementById("menuSettingsBtn");
+
+  var qaIncomeBtn = document.getElementById("qaIncomeBtn");
+  var qaExpenseBtn = document.getElementById("qaExpenseBtn");
+  var qaReportBtn = document.getElementById("qaReportBtn");
+
+  var homeBalanceValue = document.getElementById("homeBalanceValue");
+  var homeMonthPrevBtn = document.getElementById("homeMonthPrevBtn");
+  var homeMonthNextBtn = document.getElementById("homeMonthNextBtn");
+  var homeMonthLabel = document.getElementById("homeMonthLabel");
+  var homeStatReceitas = document.getElementById("homeStatReceitas");
+  var homeStatDespesas = document.getElementById("homeStatDespesas");
+  var homeStatBalanco = document.getElementById("homeStatBalanco");
+  var homeTxCount = document.getElementById("homeTxCount");
+  var homeTxFilter = document.getElementById("homeTxFilter");
+  var homeTxList = document.getElementById("homeTxList");
+
   var settingsOverlay = document.getElementById("settingsOverlay");
   var themeToggle = document.getElementById("themeToggle");
   var exportBackupBtn = document.getElementById("exportBackupBtn");
@@ -402,12 +399,13 @@
 
   var TITLES = {
     add: "Add Transaction",
-    home: "Welcome, Mr. Kaefer",
+    home: "Finanças",
     history: "History",
     categories: "Categories",
     periods: "Periods",
-    "income-detail": "Money In",
-    "expense-detail": "Money Out"
+    cartoes: "Cartões",
+    assinaturas: "Assinaturas",
+    "proximos-meses": "Próximos Meses"
   };
 
   var currentType = "expense";
@@ -422,14 +420,12 @@
     views.forEach(function (v) { v.classList.toggle("active", v.id === "view-" + name); });
     tabs.forEach(function (t) { t.classList.toggle("active", t.dataset.view === name); });
     pageTitle.textContent = TITLES[name];
-    historyBtn.classList.toggle("hidden", name !== "home");
-    settingsBtn.classList.toggle("hidden", name !== "home");
+    menuBtn.classList.toggle("hidden", name !== "home");
+    hideBalanceBtn.classList.toggle("hidden", name !== "home");
     if (name === "history") renderHistory();
     if (name === "categories") renderCategoryManager();
     if (name === "add") { renderCategorySelect(); renderPaymentMethodSelect(); }
-    if (name === "home") renderHome();
-    if (name === "income-detail") renderIncomeDetail();
-    if (name === "expense-detail") renderExpenseDetail();
+    if (name === "home") renderHomeDashboard();
     if (name === "periods") { monthOffset = 0; yearOffset = 0; renderPeriods(); }
   }
 
@@ -454,13 +450,115 @@
     btn.addEventListener("click", function () { switchView(btn.dataset.view); });
   });
 
-  historyBtn.addEventListener("click", function () { switchView("history"); });
-  manageCategoriesLink.addEventListener("click", function () { switchView("categories"); });
   backToHomeBtn.addEventListener("click", function () { switchView("home"); });
-  moneyInBox.addEventListener("click", function () { switchView("income-detail"); });
-  moneyOutBox.addEventListener("click", function () { switchView("expense-detail"); });
-  incomeDetailBackBtn.addEventListener("click", function () { switchView("home"); });
-  expenseDetailBackBtn.addEventListener("click", function () { switchView("home"); });
+
+  // ---------- side menu drawer ----------
+  menuBtn.addEventListener("click", function () { menuOverlay.classList.add("open"); });
+  menuOverlay.addEventListener("click", function (e) {
+    if (e.target === menuOverlay) menuOverlay.classList.remove("open");
+  });
+  menuHistoryBtn.addEventListener("click", function () { menuOverlay.classList.remove("open"); switchView("history"); });
+  menuCategoriesBtn.addEventListener("click", function () { menuOverlay.classList.remove("open"); switchView("categories"); });
+  menuBudgetBtn.addEventListener("click", function () { menuOverlay.classList.remove("open"); openBudgetModal(); });
+  menuSettingsBtn.addEventListener("click", function () { menuOverlay.classList.remove("open"); openSettings(); });
+
+  // ---------- balance visibility ----------
+  function loadHideBalance() { return localStorage.getItem(STORAGE_KEYS.hideBalance) === "1"; }
+  function saveHideBalance(v) { localStorage.setItem(STORAGE_KEYS.hideBalance, v ? "1" : "0"); }
+  var balanceHidden = loadHideBalance();
+  function displayCurrency(v) { return balanceHidden ? "R$ ••••" : formatCurrency(v); }
+  function updateHideBalanceIcon() { hideBalanceBtn.textContent = balanceHidden ? "🙈" : "👁"; }
+  hideBalanceBtn.addEventListener("click", function () {
+    balanceHidden = !balanceHidden;
+    saveHideBalance(balanceHidden);
+    updateHideBalanceIcon();
+    renderHomeDashboard();
+  });
+
+  // ---------- home quick actions ----------
+  qaIncomeBtn.addEventListener("click", function () { setTransactionType("income"); switchView("add"); });
+  qaExpenseBtn.addEventListener("click", function () { setTransactionType("expense"); switchView("add"); });
+  qaReportBtn.addEventListener("click", function () { switchView("periods"); });
+
+  // ---------- home nav cards ----------
+  document.querySelectorAll(".nav-card").forEach(function (card) {
+    card.addEventListener("click", function () { switchView(card.dataset.view); });
+  });
+
+  // ---------- generic back links ----------
+  document.querySelectorAll("[data-back]").forEach(function (btn) {
+    btn.addEventListener("click", function () { switchView(btn.dataset.back); });
+  });
+
+  // ---------- module stub CTAs ----------
+  document.querySelectorAll("[data-toast]").forEach(function (btn) {
+    btn.addEventListener("click", function () { showToast(btn.dataset.toast); });
+  });
+
+  // ---------- home month nav + recent transactions filter ----------
+  var homeMonthOffset = 0;
+  var homeTxFilterType = "all";
+
+  homeMonthPrevBtn.addEventListener("click", function () { homeMonthOffset -= 1; renderHomeDashboard(); });
+  homeMonthNextBtn.addEventListener("click", function () { homeMonthOffset += 1; renderHomeDashboard(); });
+
+  homeTxFilter.addEventListener("click", function (e) {
+    var btn = e.target.closest(".segmented-btn");
+    if (!btn) return;
+    homeTxFilterType = btn.dataset.filter;
+    homeTxFilter.querySelectorAll(".segmented-btn").forEach(function (b) {
+      b.classList.toggle("active", b === btn);
+    });
+    renderHomeDashboard();
+  });
+
+  var PT_MONTH_NAMES = [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+  ];
+  function monthLabelPtBR(monthKey) {
+    var parts = monthKey.split("-");
+    var month = parseInt(parts[1], 10) - 1;
+    return PT_MONTH_NAMES[month] + " " + parts[0];
+  }
+
+  function renderHomeDashboard() {
+    var monthKey = monthKeyWithOffset(homeMonthOffset);
+    homeMonthLabel.textContent = monthLabelPtBR(monthKey);
+
+    var allTxs = loadTransactions();
+
+    var totalIn = 0, totalOut = 0;
+    allTxs.forEach(function (t) {
+      if (typeOf(t) === "income") totalIn += t.amount;
+      else totalOut += t.amount;
+    });
+    homeBalanceValue.textContent = displayCurrency(totalIn - totalOut);
+
+    var monthTxs = allTxs.filter(function (t) { return financialMonthKeyFor(t.date) === monthKey; });
+    var moneyIn = 0, moneyOut = 0;
+    monthTxs.forEach(function (t) {
+      if (typeOf(t) === "income") moneyIn += t.amount;
+      else moneyOut += t.amount;
+    });
+    homeStatReceitas.textContent = displayCurrency(moneyIn);
+    homeStatDespesas.textContent = displayCurrency(moneyOut);
+    var balance = moneyIn - moneyOut;
+    homeStatBalanco.textContent = displayCurrency(balance);
+    homeStatBalanco.classList.remove("positive", "negative");
+    homeStatBalanco.classList.add(balance >= 0 ? "positive" : "negative");
+
+    var filtered = monthTxs.filter(function (t) {
+      if (homeTxFilterType === "all") return true;
+      return typeOf(t) === homeTxFilterType;
+    });
+    var sorted = collapseInstallments(filtered).sort(function (a, b) {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return b.createdAt - a.createdAt;
+    });
+    homeTxCount.textContent = String(sorted.length);
+    renderTransactionItems(homeTxList, sorted, renderHomeDashboard);
+  }
 
   monthPrevBtn.addEventListener("click", function () { monthOffset -= 1; renderMonthly(); });
   monthNextBtn.addEventListener("click", function () { monthOffset += 1; renderMonthly(); });
@@ -479,12 +577,10 @@
   });
 
   // ---------- type toggle (Add tab) ----------
-  typeToggle.addEventListener("click", function (e) {
-    var btn = e.target.closest(".segmented-btn");
-    if (!btn) return;
-    currentType = btn.dataset.type;
+  function setTransactionType(type) {
+    currentType = type;
     typeToggle.querySelectorAll(".segmented-btn").forEach(function (b) {
-      b.classList.toggle("active", b === btn);
+      b.classList.toggle("active", b.dataset.type === type);
     });
 
     installmentToggleField.classList.toggle("hidden", currentType !== "expense");
@@ -495,6 +591,12 @@
     paymentMethodField.classList.toggle("hidden", currentType !== "expense");
     newPaymentMethodBox.classList.add("hidden");
     renderCategorySelect();
+  }
+
+  typeToggle.addEventListener("click", function (e) {
+    var btn = e.target.closest(".segmented-btn");
+    if (!btn) return;
+    setTransactionType(btn.dataset.type);
   });
 
   installmentToggle.addEventListener("change", function () {
@@ -533,7 +635,6 @@
   }
   function hideBudgetModal() { budgetModalOverlay.classList.add("hidden"); }
 
-  budgetBox.addEventListener("click", openBudgetModal);
   budgetModalCancel.addEventListener("click", hideBudgetModal);
   budgetModalOverlay.addEventListener("click", function (e) {
     if (e.target === budgetModalOverlay) hideBudgetModal();
@@ -547,7 +648,6 @@
     }
     setBudgetForMonth(financialMonthKeyFor(todayStr()), val);
     hideBudgetModal();
-    renderHome();
   });
 
   // ---------- settings sheet ----------
@@ -561,7 +661,6 @@
   function closeSettings() {
     settingsOverlay.classList.remove("open");
   }
-  settingsBtn.addEventListener("click", openSettings);
   settingsOverlay.addEventListener("click", function (e) {
     if (e.target === settingsOverlay) closeSettings();
   });
@@ -940,92 +1039,6 @@
     switchView("home");
   });
 
-  // ---------- home dashboard ----------
-  function renderHome() {
-    var txs = loadTransactions();
-    var thisMonth = financialMonthKeyFor(todayStr());
-    homeCycleNote.textContent = cycleRangeLabel(thisMonth);
-
-    var moneyIn = 0, moneyOut = 0;
-    txs.forEach(function (t) {
-      if (financialMonthKeyFor(t.date) !== thisMonth) return;
-      if (typeOf(t) === "income") moneyIn += t.amount;
-      else moneyOut += t.amount;
-    });
-    var diff = moneyIn - moneyOut;
-
-    statMoneyIn.textContent = formatCurrency(moneyIn);
-    statMoneyOut.textContent = formatCurrency(moneyOut);
-    statDifference.textContent = formatCurrency(diff);
-    statDifference.classList.remove("positive", "negative");
-    statDifference.classList.add(diff >= 0 ? "positive" : "negative");
-
-    var budget = getBudgetForMonth(thisMonth);
-    statBudget.classList.remove("positive", "negative");
-    if (budget === null) {
-      statBudget.textContent = "Set budget";
-    } else {
-      var remaining = budget - moneyOut;
-      statBudget.textContent = formatCurrency(remaining);
-      statBudget.classList.add(remaining >= 0 ? "positive" : "negative");
-    }
-
-    var cycle = cycleBounds(thisMonth);
-    var categoryEntries = buildCategoryEntries(txs, cycle.start, cycle.end, "expense");
-    renderDonut(
-      { svg: document.getElementById("donutSvg"), legendList: document.getElementById("legendList"), donutTotal: document.getElementById("donutTotal"), donutWrap: document.getElementById("donutWrap") },
-      categoryEntries,
-      moneyOut,
-      "No expenses this month."
-    );
-  }
-
-  // ---------- money in / money out detail ----------
-  function sortTxsRecent(txs) {
-    return txs.slice().sort(function (a, b) {
-      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-      return b.createdAt - a.createdAt;
-    });
-  }
-
-  function renderIncomeDetail() {
-    var thisMonth = financialMonthKeyFor(todayStr());
-    var cycle = cycleBounds(thisMonth);
-    incomeDetailCycleNote.textContent = cycleRangeLabel(thisMonth);
-
-    var txs = loadTransactions().filter(function (t) {
-      return typeOf(t) === "income" && t.date >= cycle.start && t.date <= cycle.end;
-    });
-    var total = txs.reduce(function (s, t) { return s + t.amount; }, 0);
-    var entries = buildCategoryEntries(txs, cycle.start, cycle.end, "income");
-    renderDonut(
-      { svg: incomeDonutSvg, legendList: incomeLegendList, donutTotal: incomeDonutTotal, donutWrap: incomeDonutWrap },
-      entries,
-      total,
-      "No income this cycle."
-    );
-    renderTransactionItems(incomeDetailList, sortTxsRecent(txs), renderIncomeDetail);
-  }
-
-  function renderExpenseDetail() {
-    var thisMonth = financialMonthKeyFor(todayStr());
-    var cycle = cycleBounds(thisMonth);
-    expenseDetailCycleNote.textContent = cycleRangeLabel(thisMonth);
-
-    var txs = loadTransactions().filter(function (t) {
-      return typeOf(t) === "expense" && t.date >= cycle.start && t.date <= cycle.end;
-    });
-    var total = txs.reduce(function (s, t) { return s + t.amount; }, 0);
-    var entries = buildPaymentMethodEntries(txs, cycle.start, cycle.end);
-    renderDonut(
-      { svg: expenseMethodDonutSvg, legendList: expenseMethodLegendList, donutTotal: expenseMethodDonutTotal, donutWrap: expenseMethodDonutWrap },
-      entries,
-      total,
-      "No expenses this cycle."
-    );
-    renderTransactionItems(expenseDetailList, sortTxsRecent(txs), renderExpenseDetail);
-  }
-
   // ---------- annual tab ----------
   function renderAnnual() {
     var year = yearWithOffset(yearOffset);
@@ -1127,10 +1140,6 @@
 
   function buildCategoryEntries(txs, startDate, endDate, type) {
     return buildGroupedEntries(txs, startDate, endDate, type, function (t) { return t.category; });
-  }
-
-  function buildPaymentMethodEntries(txs, startDate, endDate) {
-    return buildGroupedEntries(txs, startDate, endDate, "expense", function (t) { return t.paymentMethod || "Other"; });
   }
 
   function buildGroupedEntries(txs, startDate, endDate, type, keyFn) {
@@ -1493,6 +1502,7 @@
   dateInput.value = todayStr();
   renderCategorySelect();
   renderPaymentMethodSelect();
+  updateHideBalanceIcon();
   switchView("home");
 
   if ("serviceWorker" in navigator) {
