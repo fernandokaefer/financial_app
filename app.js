@@ -8,7 +8,10 @@
     budget: "gastos_budget",
     theme: "gastos_theme",
     paymentMethods: "gastos_payment_methods",
-    hideBalance: "gastos_hide_balance"
+    hideBalance: "gastos_hide_balance",
+    cards: "gastos_cards",
+    subscriptions: "gastos_subscriptions",
+    commitments: "gastos_commitments"
   };
   var NEW_CATEGORY_VALUE = "__new__";
   var NEW_PAYMENT_METHOD_VALUE = "__new_payment_method__";
@@ -68,6 +71,72 @@
       savePaymentMethods(methods);
     }
     return name;
+  }
+
+  function removePaymentMethod(name) {
+    var methods = loadPaymentMethods().filter(function (m) { return m !== name; });
+    savePaymentMethods(methods);
+  }
+
+  // ---------- cards ----------
+  function loadCards() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.cards)) || []; }
+    catch (e) { return []; }
+  }
+  function saveCards(cards) {
+    localStorage.setItem(STORAGE_KEYS.cards, JSON.stringify(cards));
+    scheduleCloudSave();
+  }
+  function addCard(card) {
+    var cards = loadCards();
+    cards.push(card);
+    saveCards(cards);
+    addPaymentMethod(card.name);
+  }
+  function deleteCard(id) {
+    var cards = loadCards();
+    var card = cards.find(function (c) { return c.id === id; });
+    cards = cards.filter(function (c) { return c.id !== id; });
+    saveCards(cards);
+    if (card) removePaymentMethod(card.name);
+  }
+
+  // ---------- subscriptions ----------
+  function loadSubscriptions() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.subscriptions)) || []; }
+    catch (e) { return []; }
+  }
+  function saveSubscriptions(subs) {
+    localStorage.setItem(STORAGE_KEYS.subscriptions, JSON.stringify(subs));
+    scheduleCloudSave();
+  }
+  function addSubscription(sub) {
+    var subs = loadSubscriptions();
+    subs.push(sub);
+    saveSubscriptions(subs);
+  }
+  function deleteSubscription(id) {
+    var subs = loadSubscriptions().filter(function (s) { return s.id !== id; });
+    saveSubscriptions(subs);
+  }
+
+  // ---------- commitments (Próximos Meses) ----------
+  function loadCommitments() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.commitments)) || []; }
+    catch (e) { return []; }
+  }
+  function saveCommitments(items) {
+    localStorage.setItem(STORAGE_KEYS.commitments, JSON.stringify(items));
+    scheduleCloudSave();
+  }
+  function addCommitment(item) {
+    var items = loadCommitments();
+    items.push(item);
+    saveCommitments(items);
+  }
+  function deleteCommitment(id) {
+    var items = loadCommitments().filter(function (c) { return c.id !== id; });
+    saveCommitments(items);
   }
 
   function loadTransactions() {
@@ -190,26 +259,36 @@
     return y + "-" + m + "-" + day;
   }
 
-  function financialMonthKeyFor(dateStr) {
+  // Generalized version of the billing-cycle math below, parameterized by
+  // closing day so per-card invoice cycles can reuse it (closeDay 0 = calendar month).
+  function financialMonthKeyForClose(dateStr, closeDay) {
     var parts = dateStr.split("-");
     var year = parseInt(parts[0], 10);
     var month = parseInt(parts[1], 10) - 1;
     var day = parseInt(parts[2], 10);
-    if (day <= CYCLE_CLOSE_DAY) {
+    if (day <= closeDay) {
       month -= 1;
       if (month < 0) { month = 11; year -= 1; }
     }
     return year + "-" + String(month + 1).padStart(2, "0");
   }
 
-  function cycleBounds(monthKey) {
+  function cycleBoundsForClose(closeDay, monthKey) {
     var parts = monthKey.split("-");
     var year = parseInt(parts[0], 10);
     var month = parseInt(parts[1], 10) - 1;
     return {
-      start: isoDateStr(new Date(year, month, CYCLE_CLOSE_DAY + 1)),
-      end: isoDateStr(new Date(year, month + 1, CYCLE_CLOSE_DAY))
+      start: isoDateStr(new Date(year, month, closeDay + 1)),
+      end: isoDateStr(new Date(year, month + 1, closeDay))
     };
+  }
+
+  function financialMonthKeyFor(dateStr) {
+    return financialMonthKeyForClose(dateStr, CYCLE_CLOSE_DAY);
+  }
+
+  function cycleBounds(monthKey) {
+    return cycleBoundsForClose(CYCLE_CLOSE_DAY, monthKey);
   }
 
   function formatShortDate(dateStr) {
@@ -286,7 +365,6 @@
 
   // ---------- elements ----------
   var pageTitle = document.getElementById("pageTitle");
-  var tabs = document.querySelectorAll(".tab");
   var views = document.querySelectorAll(".view");
 
   var expenseForm = document.getElementById("expenseForm");
@@ -370,6 +448,48 @@
   var homeTxFilter = document.getElementById("homeTxFilter");
   var homeTxList = document.getElementById("homeTxList");
 
+  var addCardBtn = document.getElementById("addCardBtn");
+  var cartoesEmpty = document.getElementById("cartoesEmpty");
+  var cartoesEmptyAddBtn = document.getElementById("cartoesEmptyAddBtn");
+  var cartoesListWrap = document.getElementById("cartoesListWrap");
+  var cartoesTotalValue = document.getElementById("cartoesTotalValue");
+  var cardsList = document.getElementById("cardsList");
+  var cardFormOverlay = document.getElementById("cardFormOverlay");
+  var cardNameInput = document.getElementById("cardNameInput");
+  var cardLimitInput = document.getElementById("cardLimitInput");
+  var cardClosingDayInput = document.getElementById("cardClosingDayInput");
+  var cardFormSaveBtn = document.getElementById("cardFormSaveBtn");
+
+  var addSubscriptionBtn = document.getElementById("addSubscriptionBtn");
+  var assinaturasEmpty = document.getElementById("assinaturasEmpty");
+  var assinaturasEmptyAddBtn = document.getElementById("assinaturasEmptyAddBtn");
+  var assinaturasListWrap = document.getElementById("assinaturasListWrap");
+  var assinaturasTotalValue = document.getElementById("assinaturasTotalValue");
+  var subsCountValue = document.getElementById("subsCountValue");
+  var subsAnnualValue = document.getElementById("subsAnnualValue");
+  var subsMonthlyValue = document.getElementById("subsMonthlyValue");
+  var subscriptionsList = document.getElementById("subscriptionsList");
+  var subscriptionFormOverlay = document.getElementById("subscriptionFormOverlay");
+  var subNameInput = document.getElementById("subNameInput");
+  var subAmountInput = document.getElementById("subAmountInput");
+  var subBillingDayInput = document.getElementById("subBillingDayInput");
+  var subFormSaveBtn = document.getElementById("subFormSaveBtn");
+
+  var proximosHeroValue = document.getElementById("proximosHeroValue");
+  var proximosHeroLabel = document.getElementById("proximosHeroLabel");
+  var pmPagarBtn = document.getElementById("pmPagarBtn");
+  var pmReceberBtn = document.getElementById("pmReceberBtn");
+  var pmCardBtn = document.getElementById("pmCardBtn");
+  var proximosEmpty = document.getElementById("proximosEmpty");
+  var proximosListWrap = document.getElementById("proximosListWrap");
+  var commitmentsList = document.getElementById("commitmentsList");
+  var commitmentFormOverlay = document.getElementById("commitmentFormOverlay");
+  var commitmentFormTitle = document.getElementById("commitmentFormTitle");
+  var commitmentDescInput = document.getElementById("commitmentDescInput");
+  var commitmentAmountInput = document.getElementById("commitmentAmountInput");
+  var commitmentDateInput = document.getElementById("commitmentDateInput");
+  var commitmentFormSaveBtn = document.getElementById("commitmentFormSaveBtn");
+
   var settingsOverlay = document.getElementById("settingsOverlay");
   var themeToggle = document.getElementById("themeToggle");
   var exportBackupBtn = document.getElementById("exportBackupBtn");
@@ -416,17 +536,23 @@
   var periodMode = "monthly";
 
   // ---------- view switching ----------
+  var currentViewName = "home";
   function switchView(name) {
+    currentViewName = name;
     views.forEach(function (v) { v.classList.toggle("active", v.id === "view-" + name); });
-    tabs.forEach(function (t) { t.classList.toggle("active", t.dataset.view === name); });
     pageTitle.textContent = TITLES[name];
     menuBtn.classList.toggle("hidden", name !== "home");
-    hideBalanceBtn.classList.toggle("hidden", name !== "home");
+    hideBalanceBtn.classList.toggle("hidden", name !== "home" && name !== "proximos-meses");
+    addCardBtn.classList.toggle("hidden", name !== "cartoes");
+    addSubscriptionBtn.classList.toggle("hidden", name !== "assinaturas");
     if (name === "history") renderHistory();
     if (name === "categories") renderCategoryManager();
     if (name === "add") { renderCategorySelect(); renderPaymentMethodSelect(); }
     if (name === "home") renderHomeDashboard();
     if (name === "periods") { monthOffset = 0; yearOffset = 0; renderPeriods(); }
+    if (name === "cartoes") renderCartoes();
+    if (name === "assinaturas") renderAssinaturas();
+    if (name === "proximos-meses") renderProximosMeses();
   }
 
   function renderPeriods() {
@@ -444,10 +570,6 @@
     periodMonthlySection.classList.toggle("hidden", periodMode !== "monthly");
     periodAnnualSection.classList.toggle("hidden", periodMode !== "annual");
     renderPeriods();
-  });
-
-  tabs.forEach(function (btn) {
-    btn.addEventListener("click", function () { switchView(btn.dataset.view); });
   });
 
   backToHomeBtn.addEventListener("click", function () { switchView("home"); });
@@ -472,7 +594,8 @@
     balanceHidden = !balanceHidden;
     saveHideBalance(balanceHidden);
     updateHideBalanceIcon();
-    renderHomeDashboard();
+    if (currentViewName === "proximos-meses") renderProximosMeses();
+    else renderHomeDashboard();
   });
 
   // ---------- home quick actions ----------
@@ -488,11 +611,6 @@
   // ---------- generic back links ----------
   document.querySelectorAll("[data-back]").forEach(function (btn) {
     btn.addEventListener("click", function () { switchView(btn.dataset.back); });
-  });
-
-  // ---------- module stub CTAs ----------
-  document.querySelectorAll("[data-toast]").forEach(function (btn) {
-    btn.addEventListener("click", function () { showToast(btn.dataset.toast); });
   });
 
   // ---------- home month nav + recent transactions filter ----------
@@ -523,6 +641,8 @@
   }
 
   function renderHomeDashboard() {
+    checkAndGenerateSubscriptionCharges();
+
     var monthKey = monthKeyWithOffset(homeMonthOffset);
     homeMonthLabel.textContent = monthLabelPtBR(monthKey);
 
@@ -559,6 +679,320 @@
     homeTxCount.textContent = String(sorted.length);
     renderTransactionItems(homeTxList, sorted, renderHomeDashboard);
   }
+
+  // ---------- cartões module ----------
+  function currentCardInvoice(card, txs) {
+    var closeDay = card.closingDay || 0;
+    var thisCardMonth = financialMonthKeyForClose(todayStr(), closeDay);
+    var total = 0;
+    txs.forEach(function (t) {
+      if (typeOf(t) !== "expense") return;
+      if (t.paymentMethod !== card.name) return;
+      if (financialMonthKeyForClose(t.date, closeDay) !== thisCardMonth) return;
+      total += t.amount;
+    });
+    return total;
+  }
+
+  function renderCartoes() {
+    var cards = loadCards();
+    var txs = loadTransactions();
+
+    cartoesEmpty.classList.toggle("hidden", cards.length > 0);
+    cartoesListWrap.classList.toggle("hidden", cards.length === 0);
+    if (cards.length === 0) return;
+
+    var totalInvoices = 0;
+    var html = "";
+    cards.forEach(function (card) {
+      var invoice = currentCardInvoice(card, txs);
+      totalInvoices += invoice;
+
+      var barHtml = "";
+      if (card.limit) {
+        var pct = Math.min(100, Math.round((invoice / card.limit) * 100));
+        barHtml = '<div class="card-limit-bar"><div class="card-limit-fill' + (invoice > card.limit ? ' over' : '') + '" style="width:' + pct + '%"></div></div>';
+      }
+
+      var metaParts = [];
+      if (card.limit) metaParts.push("Limite " + formatCurrency(card.limit));
+      if (card.closingDay) metaParts.push("Fecha dia " + card.closingDay);
+
+      html += '<div class="card-row" data-id="' + card.id + '">' +
+        '<div class="card-row-top">' +
+          '<span class="card-row-name">' + escapeHtml(card.name) + '</span>' +
+          '<button class="icon-btn delete-card" data-id="' + card.id + '" aria-label="Delete card">✕</button>' +
+        '</div>' +
+        '<div class="card-row-invoice">' + formatCurrency(invoice) + '<span class="card-row-invoice-sub">fatura atual</span></div>' +
+        barHtml +
+        (metaParts.length ? '<div class="card-row-meta">' + metaParts.join(" · ") + '</div>' : '') +
+      '</div>';
+    });
+
+    cardsList.innerHTML = html;
+    cartoesTotalValue.textContent = formatCurrency(totalInvoices);
+
+    cardsList.querySelectorAll(".delete-card").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.dataset.id;
+        showConfirm("Excluir este cartão? As transações antigas continuam no histórico.", function () {
+          deleteCard(id);
+          renderCartoes();
+        });
+      });
+    });
+  }
+
+  function openCardForm() {
+    cardNameInput.value = "";
+    cardLimitInput.value = "";
+    cardClosingDayInput.value = "";
+    cardFormOverlay.classList.add("open");
+    cardNameInput.focus();
+  }
+  function closeCardForm() { cardFormOverlay.classList.remove("open"); }
+
+  addCardBtn.addEventListener("click", openCardForm);
+  cartoesEmptyAddBtn.addEventListener("click", openCardForm);
+  cardFormOverlay.addEventListener("click", function (e) {
+    if (e.target === cardFormOverlay) closeCardForm();
+  });
+  cardFormSaveBtn.addEventListener("click", function () {
+    var name = cardNameInput.value.trim();
+    if (!name) {
+      showToast("Digite o nome do cartão.");
+      cardNameInput.focus();
+      return;
+    }
+    var limitVal = cardLimitInput.value.trim() ? parseAmount(cardLimitInput.value) : null;
+    if (limitVal !== null && (isNaN(limitVal) || limitVal < 0)) {
+      showToast("Limite inválido.");
+      cardLimitInput.focus();
+      return;
+    }
+    var closingDayVal = cardClosingDayInput.value.trim() ? parseInt(cardClosingDayInput.value, 10) : 0;
+    if (isNaN(closingDayVal) || closingDayVal < 0 || closingDayVal > 28) closingDayVal = 0;
+
+    addCard({
+      id: uid(),
+      name: name,
+      limit: limitVal,
+      closingDay: closingDayVal,
+      createdAt: Date.now()
+    });
+    closeCardForm();
+    renderCartoes();
+    showToast("Cartão adicionado!");
+  });
+
+  // ---------- assinaturas module ----------
+  var SUBSCRIPTION_CATEGORY = "Assinaturas";
+
+  function checkAndGenerateSubscriptionCharges() {
+    var subs = loadSubscriptions();
+    if (subs.length === 0) return;
+    var today = todayStr();
+    var todayParts = today.split("-");
+    var year = parseInt(todayParts[0], 10);
+    var month = parseInt(todayParts[1], 10) - 1;
+    var currentCalMonth = year + "-" + String(month + 1).padStart(2, "0");
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    var changed = false;
+    subs.forEach(function (sub) {
+      if (sub.lastGeneratedMonth === currentCalMonth) return;
+      var billingDay = Math.min(sub.billingDay || 1, daysInMonth);
+      var chargeDate = currentCalMonth + "-" + String(billingDay).padStart(2, "0");
+      if (today < chargeDate) return;
+
+      var txs = loadTransactions();
+      txs.push({
+        id: uid(),
+        desc: sub.name,
+        amount: sub.amount,
+        category: addCategory("expense", SUBSCRIPTION_CATEGORY),
+        date: chargeDate,
+        type: "expense",
+        paymentMethod: "Assinatura",
+        subscriptionId: sub.id,
+        createdAt: Date.now()
+      });
+      saveTransactions(txs);
+      sub.lastGeneratedMonth = currentCalMonth;
+      changed = true;
+    });
+    if (changed) saveSubscriptions(subs);
+  }
+
+  function renderAssinaturas() {
+    checkAndGenerateSubscriptionCharges();
+    var subs = loadSubscriptions();
+
+    assinaturasEmpty.classList.toggle("hidden", subs.length > 0);
+    assinaturasListWrap.classList.toggle("hidden", subs.length === 0);
+    if (subs.length === 0) return;
+
+    var monthlyTotal = subs.reduce(function (s, sub) { return s + sub.amount; }, 0);
+    assinaturasTotalValue.textContent = formatCurrency(monthlyTotal);
+    subsCountValue.textContent = String(subs.length);
+    subsMonthlyValue.textContent = formatCurrency(monthlyTotal);
+    subsAnnualValue.textContent = formatCurrency(monthlyTotal * 12);
+
+    var sorted = subs.slice().sort(function (a, b) { return (a.billingDay || 1) - (b.billingDay || 1); });
+    var html = "";
+    sorted.forEach(function (sub) {
+      html += '<div class="expense-item" data-id="' + sub.id + '">' +
+        '<div class="expense-info">' +
+          '<div class="expense-desc">' + escapeHtml(sub.name) + '</div>' +
+          '<div class="expense-meta"><span class="badge">Dia ' + (sub.billingDay || 1) + '</span></div>' +
+        '</div>' +
+        '<div class="expense-right">' +
+          '<span class="expense-amount negative">' + formatCurrency(sub.amount) + '</span>' +
+          '<button class="icon-btn delete-subscription" data-id="' + sub.id + '" aria-label="Delete subscription">✕</button>' +
+        '</div>' +
+      '</div>';
+    });
+    subscriptionsList.innerHTML = html;
+
+    subscriptionsList.querySelectorAll(".delete-subscription").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.dataset.id;
+        showConfirm("Excluir esta assinatura? As despesas já lançadas continuam no histórico.", function () {
+          deleteSubscription(id);
+          renderAssinaturas();
+        });
+      });
+    });
+  }
+
+  function openSubscriptionForm() {
+    subNameInput.value = "";
+    subAmountInput.value = "";
+    subBillingDayInput.value = "";
+    subscriptionFormOverlay.classList.add("open");
+    subNameInput.focus();
+  }
+  function closeSubscriptionForm() { subscriptionFormOverlay.classList.remove("open"); }
+
+  addSubscriptionBtn.addEventListener("click", openSubscriptionForm);
+  assinaturasEmptyAddBtn.addEventListener("click", openSubscriptionForm);
+  subscriptionFormOverlay.addEventListener("click", function (e) {
+    if (e.target === subscriptionFormOverlay) closeSubscriptionForm();
+  });
+  subFormSaveBtn.addEventListener("click", function () {
+    var name = subNameInput.value.trim();
+    if (!name) { showToast("Digite o nome da assinatura."); subNameInput.focus(); return; }
+    var amount = parseAmount(subAmountInput.value);
+    if (isNaN(amount) || amount <= 0) { showToast("Valor inválido."); subAmountInput.focus(); return; }
+    var billingDay = parseInt(subBillingDayInput.value, 10);
+    if (isNaN(billingDay) || billingDay < 1 || billingDay > 28) billingDay = 1;
+
+    addSubscription({
+      id: uid(),
+      name: name,
+      amount: amount,
+      billingDay: billingDay,
+      lastGeneratedMonth: null,
+      createdAt: Date.now()
+    });
+    closeSubscriptionForm();
+    renderAssinaturas();
+    showToast("Assinatura adicionada!");
+  });
+
+  // ---------- próximos meses module ----------
+  var pendingCommitmentKind = "pagar";
+
+  function nextCalendarMonthKey() {
+    var today = todayStr();
+    var parts = today.split("-");
+    var year = parseInt(parts[0], 10);
+    var month = parseInt(parts[1], 10);
+    var targetYear = year + Math.floor(month / 12);
+    var targetMonth = month % 12;
+    return targetYear + "-" + String(targetMonth + 1).padStart(2, "0");
+  }
+
+  function renderProximosMeses() {
+    var items = loadCommitments();
+
+    var nextMonth = nextCalendarMonthKey();
+    var pagarNextMonth = items
+      .filter(function (c) { return c.kind === "pagar" && c.dueDate.slice(0, 7) === nextMonth; })
+      .reduce(function (s, c) { return s + c.amount; }, 0);
+    proximosHeroValue.textContent = displayCurrency(pagarNextMonth);
+    proximosHeroLabel.textContent = "A pagar em " + monthLabelPtBR(nextMonth).split(" ")[0];
+
+    proximosEmpty.classList.toggle("hidden", items.length > 0);
+    proximosListWrap.classList.toggle("hidden", items.length === 0);
+    if (items.length === 0) return;
+
+    var sorted = items.slice().sort(function (a, b) { return a.dueDate < b.dueDate ? -1 : 1; });
+    var html = "";
+    sorted.forEach(function (c) {
+      var isPagar = c.kind === "pagar";
+      html += '<div class="expense-item" data-id="' + c.id + '">' +
+        '<div class="expense-info">' +
+          '<div class="expense-desc">' + escapeHtml(c.desc) + '</div>' +
+          '<div class="expense-meta"><span class="badge">' + formatDateShort(c.dueDate) + '</span></div>' +
+        '</div>' +
+        '<div class="expense-right">' +
+          '<span class="expense-amount ' + (isPagar ? "negative" : "positive") + '">' + (isPagar ? "-" : "+") + formatCurrency(c.amount) + '</span>' +
+          '<button class="icon-btn delete-commitment" data-id="' + c.id + '" aria-label="Delete commitment">✕</button>' +
+        '</div>' +
+      '</div>';
+    });
+    commitmentsList.innerHTML = html;
+
+    commitmentsList.querySelectorAll(".delete-commitment").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.dataset.id;
+        showConfirm("Excluir este compromisso?", function () {
+          deleteCommitment(id);
+          renderProximosMeses();
+        });
+      });
+    });
+  }
+
+  function openCommitmentForm(kind) {
+    pendingCommitmentKind = kind;
+    commitmentFormTitle.textContent = kind === "pagar" ? "Nova Conta a Pagar" : "Novo Recebimento";
+    commitmentDescInput.value = "";
+    commitmentAmountInput.value = "";
+    commitmentDateInput.value = todayStr();
+    commitmentFormOverlay.classList.add("open");
+    commitmentDescInput.focus();
+  }
+  function closeCommitmentForm() { commitmentFormOverlay.classList.remove("open"); }
+
+  pmPagarBtn.addEventListener("click", function () { openCommitmentForm("pagar"); });
+  pmReceberBtn.addEventListener("click", function () { openCommitmentForm("receber"); });
+  pmCardBtn.addEventListener("click", function () { switchView("cartoes"); });
+
+  commitmentFormOverlay.addEventListener("click", function (e) {
+    if (e.target === commitmentFormOverlay) closeCommitmentForm();
+  });
+  commitmentFormSaveBtn.addEventListener("click", function () {
+    var desc = commitmentDescInput.value.trim();
+    if (!desc) { showToast("Digite uma descrição."); commitmentDescInput.focus(); return; }
+    var amount = parseAmount(commitmentAmountInput.value);
+    if (isNaN(amount) || amount <= 0) { showToast("Valor inválido."); commitmentAmountInput.focus(); return; }
+    var dueDate = commitmentDateInput.value;
+    if (!dueDate) { showToast("Escolha uma data."); return; }
+
+    addCommitment({
+      id: uid(),
+      desc: desc,
+      amount: amount,
+      dueDate: dueDate,
+      kind: pendingCommitmentKind,
+      createdAt: Date.now()
+    });
+    closeCommitmentForm();
+    renderProximosMeses();
+    showToast("Compromisso adicionado!");
+  });
 
   monthPrevBtn.addEventListener("click", function () { monthOffset -= 1; renderMonthly(); });
   monthNextBtn.addEventListener("click", function () { monthOffset += 1; renderMonthly(); });
@@ -685,7 +1119,10 @@
       incomeCategories: loadCategories("income"),
       paymentMethods: loadPaymentMethods(),
       budget: loadBudgetMap(),
-      theme: loadTheme()
+      theme: loadTheme(),
+      cards: loadCards(),
+      subscriptions: loadSubscriptions(),
+      commitments: loadCommitments()
     };
   }
 
@@ -710,6 +1147,9 @@
     if (Array.isArray(data.paymentMethods)) savePaymentMethods(data.paymentMethods);
     if (data.budget && typeof data.budget === "object" && !Array.isArray(data.budget)) saveBudgetMap(data.budget);
     if (typeof data.theme === "string") { saveTheme(data.theme); applyTheme(data.theme); }
+    if (Array.isArray(data.cards)) saveCards(data.cards);
+    if (Array.isArray(data.subscriptions)) saveSubscriptions(data.subscriptions);
+    if (Array.isArray(data.commitments)) saveCommitments(data.commitments);
     closeSettings();
     showToast("Backup restored!");
     switchView("home");

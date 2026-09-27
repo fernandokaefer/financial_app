@@ -23,10 +23,13 @@
     <h1 id="pageTitle">Add Transaction</h1>
     <div class="topbar-actions">
       <button type="button" id="hideBalanceBtn" class="icon-action-btn hidden" aria-label="Toggle balance visibility">👁</button>
+      <button type="button" id="addCardBtn" class="icon-action-btn hidden" aria-label="Add card">+</button>
+      <button type="button" id="addSubscriptionBtn" class="icon-action-btn hidden" aria-label="Add subscription">+</button>
     </div>
   </header>
 
   <main id="view-add" class="view">
+    <button type="button" class="link-btn back-link" data-back="home">← Voltar</button>
     <form id="expenseForm" autocomplete="off">
       <div class="segmented" id="typeToggle">
         <button type="button" class="segmented-btn active" data-type="expense">Expense</button>
@@ -85,6 +88,7 @@
   </main>
 
   <main id="view-history" class="view">
+    <button type="button" class="link-btn back-link" data-back="home">← Voltar</button>
     <div id="summaryBar" class="summary-bar"></div>
     <div id="historyList" class="history-list"></div>
   </main>
@@ -165,34 +169,91 @@
 
   <main id="view-cartoes" class="view">
     <button type="button" class="link-btn back-link" data-back="home">← Voltar</button>
-    <div class="module-empty">
+
+    <div class="module-empty hidden" id="cartoesEmpty">
       <div class="module-empty-icon">💳</div>
       <div class="module-empty-title">Sem cartões ainda</div>
-      <button type="button" class="pill-btn pill-blue" data-toast="Cartões chega na próxima fase!">Adicionar Cartão</button>
+      <button type="button" class="pill-btn pill-blue" id="cartoesEmptyAddBtn">Adicionar Cartão</button>
+    </div>
+
+    <div id="cartoesListWrap" class="hidden">
+      <div class="module-total">
+        <div class="module-total-value" id="cartoesTotalValue">R$ 0,00</div>
+        <div class="module-total-label">Total das faturas</div>
+      </div>
+      <div id="cardsList" class="cards-list"></div>
     </div>
   </main>
 
   <main id="view-assinaturas" class="view">
     <button type="button" class="link-btn back-link" data-back="home">← Voltar</button>
-    <div class="module-empty">
+
+    <div class="module-empty hidden" id="assinaturasEmpty">
       <div class="module-empty-icon">🔁</div>
       <div class="module-empty-title">Sem assinaturas</div>
       <div class="module-empty-sub">Adicione seus gastos recorrentes</div>
-      <button type="button" class="pill-btn pill-orange" data-toast="Assinaturas chega na próxima fase!">Adicionar Assinatura</button>
+      <button type="button" class="pill-btn pill-orange" id="assinaturasEmptyAddBtn">Adicionar Assinatura</button>
+    </div>
+
+    <div id="assinaturasListWrap" class="hidden">
+      <div class="module-total">
+        <div class="module-total-value" id="assinaturasTotalValue">R$ 0,00</div>
+        <div class="module-total-label">Total mensal estimado</div>
+      </div>
+      <div class="stats-grid-3">
+        <div class="stat-box-sm">
+          <div class="stat-label">Assinaturas</div>
+          <div class="stat-value" id="subsCountValue">0</div>
+        </div>
+        <div class="stat-box-sm">
+          <div class="stat-label">Anual est.</div>
+          <div class="stat-value" id="subsAnnualValue">R$ 0,00</div>
+        </div>
+        <div class="stat-box-sm">
+          <div class="stat-label">Mensal est.</div>
+          <div class="stat-value" id="subsMonthlyValue">R$ 0,00</div>
+        </div>
+      </div>
+      <div id="subscriptionsList" class="history-list"></div>
     </div>
   </main>
 
   <main id="view-proximos-meses" class="view">
     <button type="button" class="link-btn back-link" data-back="home">← Voltar</button>
-    <div class="module-empty">
+
+    <div class="balance-hero">
+      <div class="balance-value" id="proximosHeroValue">R$ 0,00</div>
+      <div class="balance-label" id="proximosHeroLabel">A pagar</div>
+    </div>
+
+    <div class="quick-actions">
+      <button type="button" class="quick-action" id="pmPagarBtn">
+        <span class="quick-action-circle qa-expense">−</span>
+        <span class="quick-action-label">A pagar</span>
+      </button>
+      <button type="button" class="quick-action" id="pmReceberBtn">
+        <span class="quick-action-circle qa-income">+</span>
+        <span class="quick-action-label">A receber</span>
+      </button>
+      <button type="button" class="quick-action" id="pmCardBtn">
+        <span class="quick-action-circle qa-report">💳</span>
+        <span class="quick-action-label">Cartão</span>
+      </button>
+    </div>
+
+    <div class="module-empty hidden" id="proximosEmpty">
       <div class="module-empty-icon">📅</div>
       <div class="module-empty-title">Sem compromissos futuros</div>
       <div class="module-empty-sub">Suas contas, parcelas e recebimentos previstos vão aparecer aqui</div>
-      <button type="button" class="pill-btn pill-blue" data-toast="Próximos Meses chega na próxima fase!">Adicionar Compromisso</button>
+    </div>
+
+    <div id="proximosListWrap" class="hidden">
+      <div id="commitmentsList" class="history-list"></div>
     </div>
   </main>
 
   <main id="view-periods" class="view">
+    <button type="button" class="link-btn back-link" data-back="home">← Voltar</button>
     <div class="segmented" id="periodToggle">
       <button type="button" class="segmented-btn active" data-period="monthly">Monthly</button>
       <button type="button" class="segmented-btn" data-period="annual">Annual</button>
@@ -270,23 +331,6 @@
     <ul id="categoryList" class="category-list"></ul>
   </main>
 
-  <nav class="tabbar">
-    <button data-view="add" class="tab">
-      <span class="icon">＋</span>
-    </button>
-    <button data-view="home" class="tab active">
-      <span class="icon">
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 11.5 12 4l9 7.5"/>
-          <path d="M5.5 10v9a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-9"/>
-          <path d="M9.5 20v-6h5v6"/>
-        </svg>
-      </span>
-    </button>
-    <button data-view="periods" class="tab">
-      <span class="icon">▤</span>
-    </button>
-  </nav>
 </div>
 
 <div id="modalOverlay" class="modal-overlay hidden">
@@ -318,6 +362,39 @@
     <button type="button" class="menu-item" id="menuCategoriesBtn"><span>🏷️</span> Categorias</button>
     <button type="button" class="menu-item" id="menuBudgetBtn"><span>🎯</span> Orçamento</button>
     <button type="button" class="menu-item" id="menuSettingsBtn"><span>⚙️</span> Configurações</button>
+  </div>
+</div>
+
+<div id="cardFormOverlay" class="sheet-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title">Novo Cartão</p>
+    <input type="text" id="cardNameInput" class="sheet-input" placeholder="Nome do cartão (ex: Nubank)" maxlength="30">
+    <input type="text" id="cardLimitInput" class="sheet-input" placeholder="Limite (opcional)" inputmode="decimal">
+    <input type="number" id="cardClosingDayInput" class="sheet-input" placeholder="Dia de fechamento (opcional, 1-28)" min="1" max="28" inputmode="numeric">
+    <button type="button" id="cardFormSaveBtn" class="primary-btn">Salvar Cartão</button>
+  </div>
+</div>
+
+<div id="subscriptionFormOverlay" class="sheet-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title">Nova Assinatura</p>
+    <input type="text" id="subNameInput" class="sheet-input" placeholder="Nome (ex: Netflix)" maxlength="30">
+    <input type="text" id="subAmountInput" class="sheet-input" placeholder="Valor mensal (R$)" inputmode="decimal">
+    <input type="number" id="subBillingDayInput" class="sheet-input" placeholder="Dia da cobrança (1-28)" min="1" max="28" inputmode="numeric">
+    <button type="button" id="subFormSaveBtn" class="primary-btn">Salvar Assinatura</button>
+  </div>
+</div>
+
+<div id="commitmentFormOverlay" class="sheet-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title" id="commitmentFormTitle">Novo Compromisso</p>
+    <input type="text" id="commitmentDescInput" class="sheet-input" placeholder="Descrição" maxlength="60">
+    <input type="text" id="commitmentAmountInput" class="sheet-input" placeholder="Valor (R$)" inputmode="decimal">
+    <input type="date" id="commitmentDateInput" class="sheet-input">
+    <button type="button" id="commitmentFormSaveBtn" class="primary-btn">Salvar</button>
   </div>
 </div>
 

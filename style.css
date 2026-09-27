@@ -140,7 +140,7 @@ html, body {
 .view {
   display: none;
   flex: 1;
-  padding: 0 20px 24px;
+  padding: 0 20px calc(env(safe-area-inset-bottom) + 24px);
   overflow-y: auto;
 }
 
@@ -484,7 +484,7 @@ html, body {
   position: fixed;
   left: 20px;
   right: 20px;
-  bottom: calc(env(safe-area-inset-bottom) + 84px);
+  bottom: calc(env(safe-area-inset-bottom) + 20px);
   background: var(--text);
   color: var(--bg);
   padding: 12px 16px;
@@ -596,47 +596,6 @@ html, body {
   margin-bottom: 8px;
   font-size: 15px;
   font-weight: 600;
-}
-
-.tabbar {
-  display: flex;
-  border-top: 1px solid var(--border);
-  background: var(--card);
-  padding: 3px 0 calc(env(safe-area-inset-bottom) + 3px);
-  position: sticky;
-  bottom: 0;
-}
-
-.tab {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  color: var(--muted);
-}
-
-.tab .icon {
-  font-size: 28px;
-  line-height: 1;
-  padding: 2px 16px;
-  border-radius: 100px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.tab .icon svg {
-  width: 28px;
-  height: 28px;
-  display: block;
-}
-
-.tab.active .icon {
-  background: var(--accent);
-  color: #fff;
 }
 
 .modal-overlay {
@@ -966,3 +925,76 @@ html, body {
 .menu-item:first-of-type { border-top: none; }
 .menu-item:active { opacity: 0.6; }
 .menu-item span { font-size: 18px; }
+
+/* ---------- module pages (Cartões / Assinaturas) ---------- */
+
+.module-total {
+  margin: 4px 0 22px;
+}
+
+.module-total-value {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.module-total-label {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.cards-list { display: flex; flex-direction: column; gap: 10px; }
+
+.card-row {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px 16px;
+}
+
+.card-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.card-row-name { font-size: 15px; font-weight: 700; }
+
+.card-row-invoice {
+  font-size: 20px;
+  font-weight: 800;
+  margin-top: 8px;
+}
+
+.card-row-invoice-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+.card-limit-bar {
+  height: 6px;
+  border-radius: 100px;
+  background: var(--bg);
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.card-limit-fill {
+  height: 100%;
+  background: var(--series-1);
+  border-radius: 100px;
+}
+
+.card-limit-fill.over { background: var(--danger); }
+
+.card-row-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 8px;
+}
