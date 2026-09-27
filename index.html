@@ -20,11 +20,11 @@
     <div class="topbar-actions topbar-actions-left">
       <button type="button" id="menuBtn" class="icon-action-btn hidden" aria-label="Menu">☰</button>
     </div>
-    <h1 id="pageTitle">Add Transaction</h1>
+    <h1 id="pageTitle">Adicionar Transação</h1>
     <div class="topbar-actions">
-      <button type="button" id="hideBalanceBtn" class="icon-action-btn hidden" aria-label="Toggle balance visibility">👁</button>
-      <button type="button" id="addCardBtn" class="icon-action-btn hidden" aria-label="Add card">+</button>
-      <button type="button" id="addSubscriptionBtn" class="icon-action-btn hidden" aria-label="Add subscription">+</button>
+      <button type="button" id="hideBalanceBtn" class="icon-action-btn hidden" aria-label="Mostrar ou ocultar saldo">👁</button>
+      <button type="button" id="addCardBtn" class="icon-action-btn hidden" aria-label="Adicionar cartão">+</button>
+      <button type="button" id="addSubscriptionBtn" class="icon-action-btn hidden" aria-label="Adicionar assinatura">+</button>
     </div>
   </header>
 
@@ -32,58 +32,58 @@
     <button type="button" class="link-btn back-link" data-back="home">← Voltar</button>
     <form id="expenseForm" autocomplete="off">
       <div class="segmented" id="typeToggle">
-        <button type="button" class="segmented-btn active" data-type="expense">Expense</button>
-        <button type="button" class="segmented-btn" data-type="income">Income</button>
+        <button type="button" class="segmented-btn active" data-type="expense">Despesa</button>
+        <button type="button" class="segmented-btn" data-type="income">Receita</button>
       </div>
 
       <label class="field">
-        <span>Description</span>
-        <input type="text" id="descInput" placeholder="e.g. Gas" required maxlength="60">
+        <span>Descrição</span>
+        <input type="text" id="descInput" placeholder="ex: Gasolina" required maxlength="60">
       </label>
 
       <label class="field">
-        <span>Amount (R$)</span>
-        <input type="text" id="amountInput" placeholder="0.00" inputmode="decimal" required>
+        <span>Valor (R$)</span>
+        <input type="text" id="amountInput" placeholder="0,00" inputmode="decimal" required>
       </label>
 
       <label class="field">
-        <span>Category</span>
+        <span>Categoria</span>
         <select id="categorySelect" required></select>
       </label>
 
       <div id="newCategoryBox" class="new-category-box hidden">
-        <input type="text" id="newCategoryInput" placeholder="New category name" maxlength="30">
-        <button type="button" id="confirmNewCategoryBtn" class="small-btn">Add</button>
+        <input type="text" id="newCategoryInput" placeholder="Nome da nova categoria" maxlength="30">
+        <button type="button" id="confirmNewCategoryBtn" class="small-btn">Adicionar</button>
       </div>
 
       <label class="field" id="paymentMethodField">
-        <span>Payment Method</span>
+        <span>Forma de Pagamento</span>
         <select id="paymentMethodSelect" required></select>
       </label>
 
       <div id="newPaymentMethodBox" class="new-category-box hidden">
-        <input type="text" id="newPaymentMethodInput" placeholder="New payment method" maxlength="30">
-        <button type="button" id="confirmNewPaymentMethodBtn" class="small-btn">Add</button>
+        <input type="text" id="newPaymentMethodInput" placeholder="Nova forma de pagamento" maxlength="30">
+        <button type="button" id="confirmNewPaymentMethodBtn" class="small-btn">Adicionar</button>
       </div>
 
       <div class="checkbox-field" id="installmentToggleField">
         <label class="checkbox-label">
           <input type="checkbox" id="installmentToggle">
-          <span>Split into installments</span>
+          <span>Parcelar</span>
         </label>
       </div>
 
       <label class="field hidden" id="installmentBox">
-        <span>Number of installments</span>
-        <input type="number" id="installmentCount" min="2" max="60" step="1" placeholder="e.g. 12" inputmode="numeric">
+        <span>Número de parcelas</span>
+        <input type="number" id="installmentCount" min="2" max="60" step="1" placeholder="ex: 12" inputmode="numeric">
       </label>
 
       <label class="field">
-        <span>Date</span>
+        <span>Data</span>
         <input type="date" id="dateInput" required>
       </label>
 
-      <button type="submit" class="primary-btn">Save</button>
+      <button type="submit" class="primary-btn">Salvar</button>
     </form>
   </main>
 
@@ -255,60 +255,73 @@
   <main id="view-periods" class="view">
     <button type="button" class="link-btn back-link" data-back="home">← Voltar</button>
     <div class="segmented" id="periodToggle">
-      <button type="button" class="segmented-btn active" data-period="monthly">Monthly</button>
-      <button type="button" class="segmented-btn" data-period="annual">Annual</button>
+      <button type="button" class="segmented-btn active" data-period="monthly">Mensal</button>
+      <button type="button" class="segmented-btn" data-period="annual">Anual</button>
     </div>
 
     <div id="periodMonthlySection">
       <div class="month-nav">
         <button type="button" id="monthPrevBtn" class="month-nav-btn">‹</button>
-        <div class="month-nav-label" id="monthNavLabel">MONTH YEAR</div>
+        <div class="month-nav-label" id="monthNavLabel">MÊS ANO</div>
         <button type="button" id="monthNextBtn" class="month-nav-btn">›</button>
       </div>
       <div class="month-nav-sublabel" id="monthNavSubLabel"></div>
-      <div id="monthSummaryBar" class="summary-bar"></div>
+      <div class="stats-grid-3">
+        <div class="stat-box-sm">
+          <div class="stat-label">Receitas</div>
+          <div class="stat-value positive" id="monthStatReceitas">R$ 0,00</div>
+        </div>
+        <div class="stat-box-sm">
+          <div class="stat-label">Despesas</div>
+          <div class="stat-value negative" id="monthStatDespesas">R$ 0,00</div>
+        </div>
+        <div class="stat-box-sm">
+          <div class="stat-label">Balanço</div>
+          <div class="stat-value" id="monthStatBalanco">R$ 0,00</div>
+        </div>
+      </div>
       <div id="monthList" class="history-list"></div>
     </div>
 
     <div id="periodAnnualSection" class="hidden">
       <div class="month-nav">
         <button type="button" id="yearPrevBtn" class="month-nav-btn">‹</button>
-        <div class="month-nav-label" id="yearNavLabel">YEAR</div>
+        <div class="month-nav-label" id="yearNavLabel">ANO</div>
         <button type="button" id="yearNextBtn" class="month-nav-btn">›</button>
       </div>
       <div class="month-nav-sublabel" id="yearNavSubLabel"></div>
 
       <div class="stats-grid">
         <div class="stat-box">
-          <div class="stat-label">Money In <span class="stat-period">(year)</span></div>
-          <div class="stat-value" id="annualMoneyIn">R$ 0.00</div>
+          <div class="stat-label">Receitas <span class="stat-period">(ano)</span></div>
+          <div class="stat-value" id="annualMoneyIn">R$ 0,00</div>
         </div>
         <div class="stat-box">
-          <div class="stat-label">Money Out <span class="stat-period">(year)</span></div>
-          <div class="stat-value" id="annualMoneyOut">R$ 0.00</div>
+          <div class="stat-label">Despesas <span class="stat-period">(ano)</span></div>
+          <div class="stat-value" id="annualMoneyOut">R$ 0,00</div>
         </div>
         <div class="stat-box">
-          <div class="stat-label">Difference <span class="stat-period">(year)</span></div>
-          <div class="stat-value" id="annualDifference">R$ 0.00</div>
+          <div class="stat-label">Diferença <span class="stat-period">(ano)</span></div>
+          <div class="stat-value" id="annualDifference">R$ 0,00</div>
         </div>
         <div class="stat-box">
-          <div class="stat-label">Avg. Budget <span class="stat-period">(year)</span></div>
-          <div class="stat-value" id="annualBudgetAvg">No data</div>
+          <div class="stat-label">Orçamento Médio <span class="stat-period">(ano)</span></div>
+          <div class="stat-value" id="annualBudgetAvg">Sem dados</div>
         </div>
       </div>
 
       <div class="chart-card">
         <div class="chart-card-title-row">
-          <div class="chart-card-title">By Category</div>
+          <div class="chart-card-title">Por Categoria</div>
           <div class="segmented segmented-sm" id="annualTypeToggle">
-            <button type="button" class="segmented-btn active" data-type="expense">Expenses</button>
-            <button type="button" class="segmented-btn" data-type="income">Income</button>
+            <button type="button" class="segmented-btn active" data-type="expense">Despesas</button>
+            <button type="button" class="segmented-btn" data-type="income">Receitas</button>
           </div>
         </div>
         <div class="donut-wrap" id="annualDonutWrap">
           <svg id="annualDonutSvg" viewBox="0 0 100 100"></svg>
           <div class="donut-center">
-            <div class="donut-total" id="annualDonutTotal">R$ 0.00</div>
+            <div class="donut-total" id="annualDonutTotal">R$ 0,00</div>
           </div>
         </div>
         <ul class="legend-list" id="annualLegendList"></ul>
@@ -317,16 +330,16 @@
   </main>
 
   <main id="view-categories" class="view">
-    <button type="button" id="backToHomeBtn" class="link-btn back-link">← Back</button>
+    <button type="button" id="backToHomeBtn" class="link-btn back-link">← Voltar</button>
 
     <div class="segmented" id="categoryKindToggle">
-      <button type="button" class="segmented-btn active" data-kind="expense">Expense Categories</button>
-      <button type="button" class="segmented-btn" data-kind="income">Income Categories</button>
+      <button type="button" class="segmented-btn active" data-kind="expense">Categorias de Despesa</button>
+      <button type="button" class="segmented-btn" data-kind="income">Categorias de Receita</button>
     </div>
 
     <form id="categoryForm" autocomplete="off">
-      <input type="text" id="categoryNameInput" placeholder="New category" required maxlength="30">
-      <button type="submit" class="small-btn">Add</button>
+      <input type="text" id="categoryNameInput" placeholder="Nova categoria" required maxlength="30">
+      <button type="submit" class="small-btn">Adicionar</button>
     </form>
     <ul id="categoryList" class="category-list"></ul>
   </main>
@@ -337,19 +350,19 @@
   <div class="modal">
     <p id="modalMessage"></p>
     <div class="modal-actions">
-      <button id="modalCancel" class="modal-btn">Cancel</button>
-      <button id="modalConfirm" class="modal-btn danger">Confirm</button>
+      <button id="modalCancel" class="modal-btn">Cancelar</button>
+      <button id="modalConfirm" class="modal-btn danger">Confirmar</button>
     </div>
   </div>
 </div>
 
 <div id="budgetModalOverlay" class="modal-overlay hidden">
   <div class="modal">
-    <p id="budgetModalTitle">Set your monthly budget</p>
-    <input type="text" id="budgetInput" class="modal-input" inputmode="decimal" placeholder="0.00">
+    <p id="budgetModalTitle">Definir orçamento mensal</p>
+    <input type="text" id="budgetInput" class="modal-input" inputmode="decimal" placeholder="0,00">
     <div class="modal-actions">
-      <button id="budgetModalCancel" class="modal-btn">Cancel</button>
-      <button id="budgetModalSave" class="modal-btn primary">Save</button>
+      <button id="budgetModalCancel" class="modal-btn">Cancelar</button>
+      <button id="budgetModalSave" class="modal-btn primary">Salvar</button>
     </div>
   </div>
 </div>
@@ -401,34 +414,34 @@
 <div id="settingsOverlay" class="sheet-overlay">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <p class="sheet-title">Settings</p>
-    <div class="sheet-label">Appearance</div>
+    <p class="sheet-title">Configurações</p>
+    <div class="sheet-label">Aparência</div>
     <div class="segmented" id="themeToggle">
-      <button type="button" class="segmented-btn" data-theme="light">Light</button>
-      <button type="button" class="segmented-btn" data-theme="dark">Dark</button>
+      <button type="button" class="segmented-btn" data-theme="light">Claro</button>
+      <button type="button" class="segmented-btn" data-theme="dark">Escuro</button>
     </div>
 
     <div class="sheet-label">Backup</div>
     <div class="button-row">
-      <button type="button" id="exportBackupBtn" class="small-btn">Export Backup</button>
-      <button type="button" id="importBackupBtn" class="small-btn">Import Backup</button>
+      <button type="button" id="exportBackupBtn" class="small-btn">Exportar Backup</button>
+      <button type="button" id="importBackupBtn" class="small-btn">Importar Backup</button>
     </div>
     <input type="file" id="importBackupInput" accept="application/json,.json" class="hidden">
 
-    <div class="sheet-label">Cloud Backup</div>
+    <div class="sheet-label">Backup na Nuvem</div>
     <div id="cloudAuthForm">
-      <input type="email" id="cloudEmailInput" class="sheet-input" placeholder="Email" autocomplete="email">
-      <input type="password" id="cloudPasswordInput" class="sheet-input" placeholder="Password" autocomplete="current-password">
+      <input type="email" id="cloudEmailInput" class="sheet-input" placeholder="E-mail" autocomplete="email">
+      <input type="password" id="cloudPasswordInput" class="sheet-input" placeholder="Senha" autocomplete="current-password">
       <div class="button-row">
-        <button type="button" id="cloudSignInBtn" class="small-btn">Sign In</button>
-        <button type="button" id="cloudSignUpBtn" class="small-btn">Create Account</button>
+        <button type="button" id="cloudSignInBtn" class="small-btn">Entrar</button>
+        <button type="button" id="cloudSignUpBtn" class="small-btn">Criar Conta</button>
       </div>
     </div>
     <div id="cloudSignedInBox" class="hidden">
       <div class="cloud-status" id="cloudStatusText"></div>
       <div class="button-row">
-        <button type="button" id="cloudRestoreBtn" class="small-btn">Restore from Cloud</button>
-        <button type="button" id="cloudSignOutBtn" class="small-btn">Sign Out</button>
+        <button type="button" id="cloudRestoreBtn" class="small-btn">Restaurar da Nuvem</button>
+        <button type="button" id="cloudSignOutBtn" class="small-btn">Sair</button>
       </div>
     </div>
   </div>

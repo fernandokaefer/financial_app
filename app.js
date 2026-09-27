@@ -39,22 +39,22 @@
     return name;
   }
 
-  var LEGACY_PT_METHOD_NAMES = {
-    "Cartão de Crédito": "Credit Card",
-    "Cartão de Débito": "Debit Card",
-    "Dinheiro": "Cash"
+  var LEGACY_EN_METHOD_NAMES = {
+    "Credit Card": "Cartão de Crédito",
+    "Debit Card": "Cartão de Débito",
+    "Cash": "Dinheiro"
   };
 
   function loadPaymentMethods() {
     try {
       var raw = localStorage.getItem(STORAGE_KEYS.paymentMethods);
       if (raw === null) {
-        var defaults = ["Pix", "Credit Card", "Debit Card", "Cash"];
+        var defaults = ["Pix", "Cartão de Crédito", "Cartão de Débito", "Dinheiro"];
         savePaymentMethods(defaults);
         return defaults;
       }
       var methods = JSON.parse(raw) || [];
-      var translated = methods.map(function (m) { return LEGACY_PT_METHOD_NAMES[m] || m; });
+      var translated = methods.map(function (m) { return LEGACY_EN_METHOD_NAMES[m] || m; });
       if (JSON.stringify(translated) !== JSON.stringify(methods)) savePaymentMethods(translated);
       return translated;
     } catch (e) { return []; }
@@ -232,14 +232,21 @@
     return monday.toISOString().slice(0, 10);
   }
 
+  var PT_MONTH_NAMES = [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+  ];
+  var PT_MONTH_ABBR = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+  function formatShortDatePtBR(d) {
+    return String(d.getDate()).padStart(2, "0") + " " + PT_MONTH_ABBR[d.getMonth()];
+  }
+
   function weekLabelFor(mondayKey) {
     var monday = new Date(mondayKey + "T00:00:00");
     var sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    var fmt = function (d) {
-      return d.toLocaleDateString("en-US", { day: "2-digit", month: "short" });
-    };
-    return fmt(monday) + " – " + fmt(sunday);
+    return formatShortDatePtBR(monday) + " – " + formatShortDatePtBR(sunday);
   }
 
   function todayStr() {
@@ -293,7 +300,7 @@
 
   function formatShortDate(dateStr) {
     var d = new Date(dateStr + "T00:00:00");
-    return d.toLocaleDateString("en-US", { day: "2-digit", month: "short" });
+    return formatShortDatePtBR(d);
   }
 
   function cycleRangeLabel(monthKey) {
@@ -312,8 +319,8 @@
     var bounds = financialYearBounds(year);
     var d = new Date(bounds.start + "T00:00:00");
     var e = new Date(bounds.end + "T00:00:00");
-    var opts = { day: "2-digit", month: "short", year: "numeric" };
-    return d.toLocaleDateString("en-US", opts) + " – " + e.toLocaleDateString("en-US", opts);
+    var fmt = function (x) { return formatShortDatePtBR(x) + " " + x.getFullYear(); };
+    return fmt(d) + " – " + fmt(e);
   }
 
   function addMonthsToDateStr(dateStr, n) {
@@ -343,8 +350,8 @@
 
   function monthLabelFor(monthKey) {
     var parts = monthKey.split("-");
-    var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
-    return d.toLocaleDateString("en-US", { month: "long", year: "numeric" }).toUpperCase();
+    var month = parseInt(parts[1], 10) - 1;
+    return (PT_MONTH_NAMES[month] + " " + parts[0]).toUpperCase();
   }
 
   function last12MonthKeys() {
@@ -403,7 +410,9 @@
   var monthNextBtn = document.getElementById("monthNextBtn");
   var monthNavLabel = document.getElementById("monthNavLabel");
   var monthNavSubLabel = document.getElementById("monthNavSubLabel");
-  var monthSummaryBar = document.getElementById("monthSummaryBar");
+  var monthStatReceitas = document.getElementById("monthStatReceitas");
+  var monthStatDespesas = document.getElementById("monthStatDespesas");
+  var monthStatBalanco = document.getElementById("monthStatBalanco");
   var monthList = document.getElementById("monthList");
 
   var yearPrevBtn = document.getElementById("yearPrevBtn");
@@ -518,11 +527,11 @@
   var budgetModalSave = document.getElementById("budgetModalSave");
 
   var TITLES = {
-    add: "Add Transaction",
+    add: "Adicionar Transação",
     home: "Finanças",
-    history: "History",
-    categories: "Categories",
-    periods: "Periods",
+    history: "Histórico",
+    categories: "Categorias",
+    periods: "Períodos",
     cartoes: "Cartões",
     assinaturas: "Assinaturas",
     "proximos-meses": "Próximos Meses"
@@ -630,10 +639,6 @@
     renderHomeDashboard();
   });
 
-  var PT_MONTH_NAMES = [
-    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-  ];
   function monthLabelPtBR(monthKey) {
     var parts = monthKey.split("-");
     var month = parseInt(parts[1], 10) - 1;
@@ -721,7 +726,7 @@
       html += '<div class="card-row" data-id="' + card.id + '">' +
         '<div class="card-row-top">' +
           '<span class="card-row-name">' + escapeHtml(card.name) + '</span>' +
-          '<button class="icon-btn delete-card" data-id="' + card.id + '" aria-label="Delete card">✕</button>' +
+          '<button class="icon-btn delete-card" data-id="' + card.id + '" aria-label="Excluir cartão">✕</button>' +
         '</div>' +
         '<div class="card-row-invoice">' + formatCurrency(invoice) + '<span class="card-row-invoice-sub">fatura atual</span></div>' +
         barHtml +
@@ -848,7 +853,7 @@
         '</div>' +
         '<div class="expense-right">' +
           '<span class="expense-amount negative">' + formatCurrency(sub.amount) + '</span>' +
-          '<button class="icon-btn delete-subscription" data-id="' + sub.id + '" aria-label="Delete subscription">✕</button>' +
+          '<button class="icon-btn delete-subscription" data-id="' + sub.id + '" aria-label="Excluir assinatura">✕</button>' +
         '</div>' +
       '</div>';
     });
@@ -938,7 +943,7 @@
         '</div>' +
         '<div class="expense-right">' +
           '<span class="expense-amount ' + (isPagar ? "negative" : "positive") + '">' + (isPagar ? "-" : "+") + formatCurrency(c.amount) + '</span>' +
-          '<button class="icon-btn delete-commitment" data-id="' + c.id + '" aria-label="Delete commitment">✕</button>' +
+          '<button class="icon-btn delete-commitment" data-id="' + c.id + '" aria-label="Excluir compromisso">✕</button>' +
         '</div>' +
       '</div>';
     });
@@ -1062,7 +1067,7 @@
   function openBudgetModal() {
     var thisMonth = financialMonthKeyFor(todayStr());
     var current = getBudgetForMonth(thisMonth);
-    budgetModalTitle.textContent = "Set your budget for " + monthLabelFor(thisMonth) + " (" + cycleRangeLabel(thisMonth) + ")";
+    budgetModalTitle.textContent = "Definir orçamento de " + monthLabelFor(thisMonth) + " (" + cycleRangeLabel(thisMonth) + ")";
     budgetInput.value = current !== null ? String(current).replace(".", ",") : "";
     budgetModalOverlay.classList.remove("hidden");
     budgetInput.focus();
@@ -1076,7 +1081,7 @@
   budgetModalSave.addEventListener("click", function () {
     var val = parseAmount(budgetInput.value);
     if (isNaN(val) || val < 0) {
-      showToast("Enter a valid amount.");
+      showToast("Digite um valor válido.");
       budgetInput.focus();
       return;
     }
@@ -1137,7 +1142,7 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast("Backup exported!");
+    showToast("Backup exportado!");
   }
 
   function restoreBackup(data) {
@@ -1151,7 +1156,7 @@
     if (Array.isArray(data.subscriptions)) saveSubscriptions(data.subscriptions);
     if (Array.isArray(data.commitments)) saveCommitments(data.commitments);
     closeSettings();
-    showToast("Backup restored!");
+    showToast("Backup restaurado!");
     switchView("home");
   }
 
@@ -1160,12 +1165,12 @@
     reader.onload = function () {
       var data;
       try { data = JSON.parse(reader.result); }
-      catch (e) { showToast("Invalid backup file."); return; }
+      catch (e) { showToast("Arquivo de backup inválido."); return; }
       if (!data || typeof data !== "object" || Array.isArray(data)) {
-        showToast("Invalid backup file.");
+        showToast("Arquivo de backup inválido.");
         return;
       }
-      showConfirm("Restore this backup? It will replace all current data on this device.", function () {
+      showConfirm("Restaurar este backup? Isso vai substituir todos os dados atuais deste dispositivo.", function () {
         restoreBackup(data);
       });
     };
@@ -1197,9 +1202,9 @@
   function refreshCloudStatusText() {
     if (!window.CloudSync || !window.CloudSync.isSignedIn()) return;
     var lastText = lastCloudSyncAt
-      ? new Date(lastCloudSyncAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-      : "just now";
-    cloudStatusText.innerHTML = 'Signed in as <span class="ok">' + escapeHtml(window.CloudSync.currentEmail()) + '</span><br>Last synced: ' + lastText;
+      ? new Date(lastCloudSyncAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      : "agora mesmo";
+    cloudStatusText.innerHTML = 'Conectado como <span class="ok">' + escapeHtml(window.CloudSync.currentEmail()) + '</span><br>Última sincronização: ' + lastText;
   }
 
   function updateCloudStatusUI(user) {
@@ -1216,17 +1221,17 @@
   cloudSignUpBtn.addEventListener("click", function () {
     var email = cloudEmailInput.value.trim();
     var password = cloudPasswordInput.value;
-    if (!email || !password) { showToast("Enter email and password."); return; }
+    if (!email || !password) { showToast("Digite e-mail e senha."); return; }
     window.CloudSync.signUp(email, password).then(function () {
       cloudPasswordInput.value = "";
-      showToast("Account created — backing up now.");
+      showToast("Conta criada — fazendo backup agora.");
     }).catch(function (err) { showToast(err.message); });
   });
 
   cloudSignInBtn.addEventListener("click", function () {
     var email = cloudEmailInput.value.trim();
     var password = cloudPasswordInput.value;
-    if (!email || !password) { showToast("Enter email and password."); return; }
+    if (!email || !password) { showToast("Digite e-mail e senha."); return; }
     window.CloudSync.signIn(email, password).then(function () {
       cloudPasswordInput.value = "";
     }).catch(function (err) { showToast(err.message); });
@@ -1238,8 +1243,8 @@
 
   cloudRestoreBtn.addEventListener("click", function () {
     window.CloudSync.fetchCloudBackup().then(function (data) {
-      if (!data) { showToast("No cloud backup found yet."); return; }
-      showConfirm("Restore from your cloud backup? This will replace all current data on this device.", function () {
+      if (!data) { showToast("Nenhum backup na nuvem encontrado ainda."); return; }
+      showConfirm("Restaurar do seu backup na nuvem? Isso vai substituir todos os dados atuais deste dispositivo.", function () {
         restoreBackup(data);
       });
     }).catch(function (err) { showToast(err.message); });
@@ -1251,7 +1256,7 @@
   });
 
   window.addEventListener("cloudsync:error", function (e) {
-    showToast("Cloud sync error: " + e.detail.message);
+    showToast("Erro na sincronização: " + e.detail.message);
   });
 
   whenCloudSyncReady(function () {
@@ -1289,7 +1294,7 @@
     if (cats.length === 0) {
       var placeholder = document.createElement("option");
       placeholder.value = "";
-      placeholder.textContent = "No categories yet";
+      placeholder.textContent = "Nenhuma categoria ainda";
       placeholder.disabled = true;
       placeholder.selected = true;
       categorySelect.appendChild(placeholder);
@@ -1304,7 +1309,7 @@
 
     var newOpt = document.createElement("option");
     newOpt.value = NEW_CATEGORY_VALUE;
-    newOpt.textContent = "+ New category";
+    newOpt.textContent = "+ Nova categoria";
     categorySelect.appendChild(newOpt);
 
     if (selectValue && cats.indexOf(selectValue) !== -1) {
@@ -1350,7 +1355,7 @@
 
     var newOpt = document.createElement("option");
     newOpt.value = NEW_PAYMENT_METHOD_VALUE;
-    newOpt.textContent = "+ New method";
+    newOpt.textContent = "+ Nova forma de pagamento";
     paymentMethodSelect.appendChild(newOpt);
 
     if (selectValue && methods.indexOf(selectValue) !== -1) {
@@ -1389,7 +1394,7 @@
     if (!desc || !date) return;
 
     if (isNaN(amount) || amount <= 0) {
-      showToast("Enter a valid amount.");
+      showToast("Digite um valor válido.");
       amountInput.focus();
       return;
     }
@@ -1397,7 +1402,7 @@
     if (category === NEW_CATEGORY_VALUE || !category) {
       var pending = newCategoryInput.value.trim();
       if (!pending) {
-        showToast("Enter a category name.");
+        showToast("Digite o nome da categoria.");
         newCategoryInput.focus();
         return;
       }
@@ -1410,7 +1415,7 @@
       if (paymentMethod === NEW_PAYMENT_METHOD_VALUE || !paymentMethod) {
         var pendingMethod = newPaymentMethodInput.value.trim();
         if (!pendingMethod) {
-          showToast("Enter a payment method name.");
+          showToast("Digite o nome da forma de pagamento.");
           newPaymentMethodInput.focus();
           return;
         }
@@ -1422,7 +1427,7 @@
     if (currentType === "expense" && installmentToggle.checked) {
       installments = parseInt(installmentCount.value, 10);
       if (!installments || installments < 2) {
-        showToast("Enter a valid number of installments (2–60).");
+        showToast("Digite um número de parcelas válido (2–60).");
         installmentCount.focus();
         return;
       }
@@ -1475,7 +1480,7 @@
     installmentCount.value = "";
     renderCategorySelect();
     renderPaymentMethodSelect();
-    showToast(installments > 1 ? "Saved across " + installments + " months!" : "Saved!");
+    showToast(installments > 1 ? "Salvo em " + installments + " meses!" : "Salvo!");
     switchView("home");
   });
 
@@ -1508,7 +1513,7 @@
     var monthsOfYear = monthKeysOfYear(year);
     var set = monthsOfYear.filter(function (k) { return typeof budgetMap[k] === "number" && !isNaN(budgetMap[k]); });
     if (set.length === 0) {
-      annualBudgetAvg.textContent = "No data";
+      annualBudgetAvg.textContent = "Sem dados";
     } else {
       var avg = set.reduce(function (s, k) { return s + budgetMap[k]; }, 0) / set.length;
       annualBudgetAvg.textContent = formatCurrency(avg);
@@ -1516,7 +1521,7 @@
 
     var entries = buildCategoryEntries(txs, startDate, endDate, annualKind);
     var total = entries.reduce(function (s, e) { return s + e.amount; }, 0);
-    var emptyMsg = (annualKind === "income" ? "No income in " : "No expenses in ") + year + ".";
+    var emptyMsg = (annualKind === "income" ? "Nenhuma receita em " : "Nenhuma despesa em ") + year + ".";
 
     renderDonut(
       { svg: annualDonutSvg, legendList: annualLegendList, donutTotal: annualDonutTotal, donutWrap: annualDonutWrap },
@@ -1545,13 +1550,15 @@
       else moneyOut += t.amount;
     });
 
-    monthSummaryBar.innerHTML = "";
-    var line1 = document.createElement("div");
-    line1.textContent = "In " + formatCurrency(moneyIn) + "  ·  Out " + formatCurrency(moneyOut) + "  ·  Net " + formatCurrency(moneyIn - moneyOut);
-    monthSummaryBar.appendChild(line1);
+    monthStatReceitas.textContent = formatCurrency(moneyIn);
+    monthStatDespesas.textContent = formatCurrency(moneyOut);
+    var monthBalance = moneyIn - moneyOut;
+    monthStatBalanco.textContent = formatCurrency(monthBalance);
+    monthStatBalanco.classList.remove("positive", "negative");
+    monthStatBalanco.classList.add(monthBalance >= 0 ? "positive" : "negative");
 
     if (txs.length === 0) {
-      monthList.innerHTML = '<div class="empty-state">No transactions in this month.</div>';
+      monthList.innerHTML = '<div class="empty-state">Nenhuma transação neste mês.</div>';
       return;
     }
 
@@ -1564,7 +1571,7 @@
     monthList.querySelectorAll(".delete-month-expense").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var id = btn.dataset.id;
-        showConfirm("Delete this transaction?", function () {
+        showConfirm("Excluir esta transação?", function () {
           var remaining = loadTransactions().filter(function (t) { return t.id !== id; });
           saveTransactions(remaining);
           renderMonthly();
@@ -1600,7 +1607,7 @@
     if (entries.length > MAX_SLICES) {
       var top = entries.slice(0, MAX_SLICES);
       var restTotal = entries.slice(MAX_SLICES).reduce(function (s, e) { return s + e.amount; }, 0);
-      if (restTotal > 0) top.push({ name: "Other", amount: restTotal, isOther: true });
+      if (restTotal > 0) top.push({ name: "Outros", amount: restTotal, isOther: true });
       entries = top;
     }
 
@@ -1777,11 +1784,11 @@
     });
 
     summaryBar.innerHTML =
-      "Net total: " + formatCurrency(total) +
-      '<div class="muted">' + txs.length + " transaction(s)</div>";
+      "Total líquido: " + formatCurrency(total) +
+      '<div class="muted">' + txs.length + " transação(ões)</div>";
 
     if (txs.length === 0) {
-      historyList.innerHTML = '<div class="empty-state">No transactions yet.</div>';
+      historyList.innerHTML = '<div class="empty-state">Nenhuma transação ainda.</div>';
       return;
     }
 
@@ -1801,7 +1808,7 @@
         return s + (typeOf(t) === "income" ? t.amount : -t.amount);
       }, 0);
       html += '<div class="week-group">';
-      html += '<div class="week-header"><span>Week of ' + weekLabelFor(key) + '</span>' +
+      html += '<div class="week-header"><span>Semana de ' + weekLabelFor(key) + '</span>' +
               '<span class="week-total">' + formatCurrency(weekTotal) + '</span></div>';
       items.forEach(function (t) {
         html += expenseItemHtml(t, "delete-expense", t.installmentGroup ? ' data-group="1"' : '');
@@ -1815,7 +1822,7 @@
         var id = btn.dataset.id;
         var isGroup = btn.dataset.group === "1";
         showConfirm(
-          isGroup ? "Delete this purchase and all its installments?" : "Delete this transaction?",
+          isGroup ? "Excluir esta compra e todas as suas parcelas?" : "Excluir esta transação?",
           function () {
             var remaining = loadTransactions().filter(function (t) {
               return isGroup ? t.installmentGroup !== id : t.id !== id;
@@ -1847,14 +1854,14 @@
       '</div>' +
       '<div class="expense-right">' +
         '<span class="expense-amount ' + amountClass + '">' + sign + formatCurrency(t.amount) + '</span>' +
-        '<button class="icon-btn ' + deleteClass + '" data-id="' + t.id + '"' + (extraAttrs || '') + ' aria-label="Delete transaction">✕</button>' +
+        '<button class="icon-btn ' + deleteClass + '" data-id="' + t.id + '"' + (extraAttrs || '') + ' aria-label="Excluir transação">✕</button>' +
       '</div>' +
     '</div>';
   }
 
   function renderTransactionItems(container, txs, onDeleted) {
     if (txs.length === 0) {
-      container.innerHTML = '<div class="empty-state">No transactions yet.</div>';
+      container.innerHTML = '<div class="empty-state">Sem transações.</div>';
       return;
     }
     var html = "";
@@ -1866,7 +1873,7 @@
     container.querySelectorAll(".delete-tx").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var id = btn.dataset.id;
-        showConfirm("Delete this transaction?", function () {
+        showConfirm("Excluir esta transação?", function () {
           var remaining = loadTransactions().filter(function (t) { return t.id !== id; });
           saveTransactions(remaining);
           onDeleted();
@@ -1889,7 +1896,7 @@
   function renderCategoryManager() {
     var cats = loadCategories(categoryManagerKind);
     if (cats.length === 0) {
-      categoryList.innerHTML = '<div class="empty-state">No categories yet.</div>';
+      categoryList.innerHTML = '<div class="empty-state">Nenhuma categoria ainda.</div>';
       return;
     }
     var html = "";
@@ -1903,7 +1910,7 @@
       btn.addEventListener("click", function () {
         var name = btn.dataset.name;
         showConfirm(
-          'Delete category "' + name + '"? Past transactions keep it, it just disappears from the list for new ones.',
+          'Excluir a categoria "' + name + '"? Transações antigas mantêm ela, só desaparece da lista para novas.',
           function () {
             var cats = loadCategories(categoryManagerKind).filter(function (c) { return c !== name; });
             saveCategories(categoryManagerKind, cats);
@@ -1931,8 +1938,8 @@
     var txs = loadTransactions();
     var changed = false;
     txs.forEach(function (t) {
-      if (t.paymentMethod && LEGACY_PT_METHOD_NAMES[t.paymentMethod]) {
-        t.paymentMethod = LEGACY_PT_METHOD_NAMES[t.paymentMethod];
+      if (t.paymentMethod && LEGACY_EN_METHOD_NAMES[t.paymentMethod]) {
+        t.paymentMethod = LEGACY_EN_METHOD_NAMES[t.paymentMethod];
         changed = true;
       }
     });
