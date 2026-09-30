@@ -794,12 +794,14 @@ html, body {
   gap: 12px;
   overflow-x: auto;
   margin: 0 -20px 22px;
-  padding: 2px 20px 6px;
+  padding: 2px 0 6px;
   scroll-snap-type: x proximity;
   scrollbar-width: none;
 }
 
 .nav-cards::-webkit-scrollbar { display: none; }
+.nav-cards .nav-card:first-child { margin-left: 20px; }
+.nav-cards .nav-card:last-child { margin-right: 20px; }
 
 .nav-card {
   flex-shrink: 0;
