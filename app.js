@@ -447,6 +447,7 @@
   var menuHistoryBtn = document.getElementById("menuHistoryBtn");
   var menuCategoriesBtn = document.getElementById("menuCategoriesBtn");
   var menuBudgetBtn = document.getElementById("menuBudgetBtn");
+  var menuSyncInstallmentsBtn = document.getElementById("menuSyncInstallmentsBtn");
   var menuSettingsBtn = document.getElementById("menuSettingsBtn");
 
   var qaIncomeBtn = document.getElementById("qaIncomeBtn");
@@ -595,6 +596,65 @@
 
   backToHomeBtn.addEventListener("click", function () { switchView("home"); });
 
+  // ---------- installment sync (fix stragglers left over from per-installment edits) ----------
+  function computeInstallmentSyncPlan() {
+    var txs = loadTransactions();
+    var groups = {};
+    txs.forEach(function (t) {
+      if (!t.installmentGroup) return;
+      if (!groups[t.installmentGroup]) groups[t.installmentGroup] = [];
+      groups[t.installmentGroup].push(t);
+    });
+
+    var changedGroups = 0;
+    var changedItems = 0;
+
+    Object.keys(groups).forEach(function (groupId) {
+      var items = groups[groupId];
+      if (items.length < 2) return;
+
+      var classifiedItems = items.filter(function (t) { return !!t.cardName; });
+      if (classifiedItems.length === 0) return;
+
+      var counts = {};
+      classifiedItems.forEach(function (t) {
+        var key = t.cardName;
+        if (!counts[key]) {
+          counts[key] = {
+            cardName: t.cardName,
+            paymentMethod: t.paymentMethod,
+            category: t.category,
+            count: 0,
+            minIndex: t.installmentIndex || 999
+          };
+        }
+        counts[key].count++;
+        if ((t.installmentIndex || 999) < counts[key].minIndex) counts[key].minIndex = t.installmentIndex || 999;
+      });
+
+      var best = null;
+      Object.keys(counts).forEach(function (k) {
+        var c = counts[k];
+        if (!best || c.count > best.count || (c.count === best.count && c.minIndex < best.minIndex)) best = c;
+      });
+
+      var groupChanged = false;
+      items.forEach(function (t) {
+        var needsChange = t.cardName !== best.cardName || t.paymentMethod !== best.paymentMethod || t.category !== best.category;
+        if (needsChange) {
+          t.cardName = best.cardName;
+          t.paymentMethod = best.paymentMethod;
+          t.category = best.category;
+          changedItems++;
+          groupChanged = true;
+        }
+      });
+      if (groupChanged) changedGroups++;
+    });
+
+    return { txs: txs, changedGroups: changedGroups, changedItems: changedItems };
+  }
+
   // ---------- side menu drawer ----------
   menuBtn.addEventListener("click", function () { menuOverlay.classList.add("open"); });
   menuOverlay.addEventListener("click", function (e) {
@@ -603,6 +663,22 @@
   menuHistoryBtn.addEventListener("click", function () { menuOverlay.classList.remove("open"); switchView("history"); });
   menuCategoriesBtn.addEventListener("click", function () { menuOverlay.classList.remove("open"); switchView("categories"); });
   menuBudgetBtn.addEventListener("click", function () { menuOverlay.classList.remove("open"); openBudgetModal(); });
+  menuSyncInstallmentsBtn.addEventListener("click", function () {
+    menuOverlay.classList.remove("open");
+    var plan = computeInstallmentSyncPlan();
+    if (plan.changedItems === 0) {
+      showToast("Tudo certo! Nenhuma parcela precisa de ajuste.");
+      return;
+    }
+    showConfirm(
+      "Isso vai igualar cartão, forma de pagamento e categoria em " + plan.changedItems + " parcela(s) de " + plan.changedGroups + " compra(s), usando a classificação mais comum de cada uma. Continuar?",
+      function () {
+        saveTransactions(plan.txs);
+        renderHomeDashboard();
+        showToast(plan.changedItems + " parcela(s) sincronizada(s)!");
+      }
+    );
+  });
   menuSettingsBtn.addEventListener("click", function () { menuOverlay.classList.remove("open"); openSettings(); });
 
   // ---------- balance visibility ----------
