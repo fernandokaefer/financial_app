@@ -653,22 +653,16 @@
 
     var allTxs = loadTransactions();
 
-    var totalIn = 0, totalOut = 0;
-    allTxs.forEach(function (t) {
-      if (typeOf(t) === "income") totalIn += t.amount;
-      else totalOut += t.amount;
-    });
-    homeBalanceValue.textContent = displayCurrency(totalIn - totalOut);
-
     var monthTxs = allTxs.filter(function (t) { return financialMonthKeyFor(t.date) === monthKey; });
     var moneyIn = 0, moneyOut = 0;
     monthTxs.forEach(function (t) {
       if (typeOf(t) === "income") moneyIn += t.amount;
       else moneyOut += t.amount;
     });
+    var balance = moneyIn - moneyOut;
+    homeBalanceValue.textContent = displayCurrency(balance);
     homeStatReceitas.textContent = displayCurrency(moneyIn);
     homeStatDespesas.textContent = displayCurrency(moneyOut);
-    var balance = moneyIn - moneyOut;
     homeStatBalanco.textContent = displayCurrency(balance);
     homeStatBalanco.classList.remove("positive", "negative");
     homeStatBalanco.classList.add(balance >= 0 ? "positive" : "negative");
