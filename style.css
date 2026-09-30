@@ -800,8 +800,7 @@ html, body {
 }
 
 .nav-cards::-webkit-scrollbar { display: none; }
-.nav-cards .nav-card:first-child { margin-left: 20px; }
-.nav-cards .nav-card:last-child { margin-right: 20px; }
+.nav-cards-spacer { flex: 0 0 8px; width: 8px; }
 
 .nav-card {
   flex-shrink: 0;
