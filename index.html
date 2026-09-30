@@ -66,6 +66,11 @@
         <button type="button" id="confirmNewPaymentMethodBtn" class="small-btn">Adicionar</button>
       </div>
 
+      <label class="field hidden" id="cardSelectField">
+        <span>Qual cartão?</span>
+        <select id="cardSelect"></select>
+      </label>
+
       <div class="checkbox-field" id="installmentToggleField">
         <label class="checkbox-label">
           <input type="checkbox" id="installmentToggle">
@@ -83,7 +88,7 @@
         <input type="date" id="dateInput" required>
       </label>
 
-      <button type="submit" class="primary-btn">Salvar</button>
+      <button type="submit" class="primary-btn" id="saveTxBtn">Salvar</button>
     </form>
   </main>
 

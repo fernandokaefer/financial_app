@@ -572,6 +572,7 @@ html, body {
   line-height: 1;
 }
 .icon-btn:active { color: var(--danger); }
+.icon-btn.edit-tx:active { color: var(--accent); }
 
 .empty-state {
   text-align: center;
