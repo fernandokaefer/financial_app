@@ -1,8 +1,8 @@
-var CACHE_NAME = "gastos-v26";
+var CACHE_NAME = "gastos-v27";
 var ASSETS = [
   "./",
   "./index.html",
-  "./style.css?v=2",
+  "./style.css?v=3",
   "./app.js?v=2",
   "./firebase-sync.js",
   "./manifest.json",

@@ -795,7 +795,6 @@ html, body {
   overflow-x: auto;
   margin: 0 -20px 22px;
   padding: 2px 0 6px;
-  scroll-snap-type: x proximity;
   scrollbar-width: none;
 }
 
@@ -804,7 +803,6 @@ html, body {
 
 .nav-card {
   flex-shrink: 0;
-  scroll-snap-align: start;
   width: 150px;
   border-radius: 20px;
   border: none;
