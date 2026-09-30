@@ -392,6 +392,8 @@
   var confirmNewPaymentMethodBtn = document.getElementById("confirmNewPaymentMethodBtn");
   var cardSelectField = document.getElementById("cardSelectField");
   var cardSelect = document.getElementById("cardSelect");
+  var applyAllInstallmentsField = document.getElementById("applyAllInstallmentsField");
+  var applyAllInstallmentsToggle = document.getElementById("applyAllInstallmentsToggle");
   var saveTxBtn = document.getElementById("saveTxBtn");
 
   var dateInput = document.getElementById("dateInput");
@@ -1432,6 +1434,7 @@
     installmentBox.classList.add("hidden");
     installmentCount.value = "";
     installmentToggleField.classList.toggle("hidden", currentType !== "expense");
+    applyAllInstallmentsField.classList.add("hidden");
     saveTxBtn.textContent = "Salvar";
     renderCategorySelect();
     renderPaymentMethodSelect();
@@ -1467,6 +1470,8 @@
     installmentToggleField.classList.add("hidden");
     installmentToggle.checked = false;
     installmentBox.classList.add("hidden");
+    applyAllInstallmentsField.classList.toggle("hidden", !tx.installmentGroup);
+    applyAllInstallmentsToggle.checked = true;
     saveTxBtn.textContent = "Salvar Alterações";
     switchView("add");
   }
@@ -1521,6 +1526,12 @@
       var allTxs = loadTransactions();
       var idx = allTxs.findIndex(function (t) { return t.id === editingTxId; });
       if (idx !== -1) {
+        var groupId = allTxs[idx].installmentGroup;
+        var applyToGroup = !!groupId &&
+          !applyAllInstallmentsField.classList.contains("hidden") &&
+          applyAllInstallmentsToggle.checked;
+        var baseDesc = desc.replace(/\s*\(\d+\/\d+\)$/, "");
+
         allTxs[idx].desc = desc;
         allTxs[idx].amount = amount;
         allTxs[idx].category = category;
@@ -1534,11 +1545,28 @@
           delete allTxs[idx].paymentMethod;
           delete allTxs[idx].cardName;
         }
+
+        if (applyToGroup) {
+          allTxs.forEach(function (t) {
+            if (t.installmentGroup !== groupId || t.id === editingTxId) return;
+            t.category = category;
+            if (currentType === "expense") {
+              t.paymentMethod = paymentMethod;
+              if (cardName) t.cardName = cardName;
+              else delete t.cardName;
+            } else {
+              delete t.paymentMethod;
+              delete t.cardName;
+            }
+            t.desc = baseDesc + " (" + t.installmentIndex + "/" + t.installmentTotal + ")";
+          });
+        }
+
         saveTransactions(allTxs);
       }
       editingTxId = null;
       resetAddFormAfterSave();
-      showToast("Alterações salvas!");
+      showToast(applyToGroup ? "Alterações salvas em todas as parcelas!" : "Alterações salvas!");
       switchView("home");
       return;
     }
@@ -1879,6 +1907,7 @@
         date: first.date,
         type: first.type,
         paymentMethod: first.paymentMethod,
+        cardName: first.cardName,
         createdAt: first.createdAt,
         installmentGroup: groupId
       };
