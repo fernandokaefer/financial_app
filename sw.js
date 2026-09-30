@@ -1,4 +1,4 @@
-var CACHE_NAME = "gastos-v24";
+var CACHE_NAME = "gastos-v25";
 var ASSETS = [
   "./",
   "./index.html",
@@ -29,7 +29,7 @@ self.addEventListener("activate", function (event) {
 self.addEventListener("fetch", function (event) {
   if (event.request.method !== "GET") return;
   event.respondWith(
-    fetch(event.request).then(function (response) {
+    fetch(event.request, { cache: "no-store" }).then(function (response) {
       var copy = response.clone();
       caches.open(CACHE_NAME).then(function (cache) { cache.put(event.request, copy); });
       return response;
