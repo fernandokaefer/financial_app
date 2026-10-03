@@ -136,6 +136,7 @@ html, body {
 }
 
 .icon-action-btn:active { opacity: 0.6; }
+.icon-action-btn svg { display: block; }
 
 .view {
   display: none;

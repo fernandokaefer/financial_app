@@ -686,7 +686,10 @@
   function saveHideBalance(v) { localStorage.setItem(STORAGE_KEYS.hideBalance, v ? "1" : "0"); }
   var balanceHidden = loadHideBalance();
   function displayCurrency(v) { return balanceHidden ? "R$ ••••" : formatCurrency(v); }
-  function updateHideBalanceIcon() { hideBalanceBtn.textContent = balanceHidden ? "🙈" : "👁"; }
+  var EYE_SVG_ATTRS = 'viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+  var EYE_OPEN_SVG = '<svg ' + EYE_SVG_ATTRS + '><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var EYE_OFF_SVG = '<svg ' + EYE_SVG_ATTRS + '><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg>';
+  function updateHideBalanceIcon() { hideBalanceBtn.innerHTML = balanceHidden ? EYE_OFF_SVG : EYE_OPEN_SVG; }
   hideBalanceBtn.addEventListener("click", function () {
     balanceHidden = !balanceHidden;
     saveHideBalance(balanceHidden);
