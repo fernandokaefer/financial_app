@@ -9,8 +9,7 @@
     theme: "gastos_theme",
     paymentMethods: "gastos_payment_methods",
     hideBalance: "gastos_hide_balance",
-    subscriptions: "gastos_subscriptions",
-    commitments: "gastos_commitments"
+    subscriptions: "gastos_subscriptions"
   };
   var NEW_CATEGORY_VALUE = "__new__";
   var NEW_PAYMENT_METHOD_VALUE = "__new_payment_method__";
@@ -91,23 +90,15 @@
     saveSubscriptions(subs);
   }
 
-  // ---------- commitments (Próximos Meses) ----------
-  function loadCommitments() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.commitments)) || []; }
-    catch (e) { return []; }
-  }
-  function saveCommitments(items) {
-    localStorage.setItem(STORAGE_KEYS.commitments, JSON.stringify(items));
-    scheduleCloudSave();
-  }
-  function addCommitment(item) {
-    var items = loadCommitments();
-    items.push(item);
-    saveCommitments(items);
-  }
-  function deleteCommitment(id) {
-    var items = loadCommitments().filter(function (c) { return c.id !== id; });
-    saveCommitments(items);
+  // A subscription's price can change over time: `changes` is a list of
+  // { from: "YYYY-MM", amount } and the latest one starting on/before a month wins.
+  // Charges already generated are stored transactions, so they never change.
+  function subscriptionAmountForMonth(sub, monthKey) {
+    var best = null;
+    (sub.changes || []).forEach(function (c) {
+      if (c.from <= monthKey && (!best || c.from > best.from)) best = c;
+    });
+    return best ? best.amount : sub.amount;
   }
 
   function loadTransactions() {
@@ -437,19 +428,11 @@
   var subBillingDayInput = document.getElementById("subBillingDayInput");
   var subFormSaveBtn = document.getElementById("subFormSaveBtn");
 
-  var proximosHeroValue = document.getElementById("proximosHeroValue");
-  var proximosHeroLabel = document.getElementById("proximosHeroLabel");
-  var pmPagarBtn = document.getElementById("pmPagarBtn");
-  var pmReceberBtn = document.getElementById("pmReceberBtn");
-  var proximosEmpty = document.getElementById("proximosEmpty");
-  var proximosListWrap = document.getElementById("proximosListWrap");
-  var commitmentsList = document.getElementById("commitmentsList");
-  var commitmentFormOverlay = document.getElementById("commitmentFormOverlay");
-  var commitmentFormTitle = document.getElementById("commitmentFormTitle");
-  var commitmentDescInput = document.getElementById("commitmentDescInput");
-  var commitmentAmountInput = document.getElementById("commitmentAmountInput");
-  var commitmentDateInput = document.getElementById("commitmentDateInput");
-  var commitmentFormSaveBtn = document.getElementById("commitmentFormSaveBtn");
+  var subEditOverlay = document.getElementById("subEditOverlay");
+  var subEditTitle = document.getElementById("subEditTitle");
+  var subEditAmountInput = document.getElementById("subEditAmountInput");
+  var subEditFromSelect = document.getElementById("subEditFromSelect");
+  var subEditSaveBtn = document.getElementById("subEditSaveBtn");
 
   var settingsOverlay = document.getElementById("settingsOverlay");
   var themeToggle = document.getElementById("themeToggle");
@@ -484,8 +467,7 @@
     history: "Histórico",
     categories: "Categorias",
     periods: "Períodos",
-    assinaturas: "Assinaturas",
-    "proximos-meses": "Próximos Meses"
+    assinaturas: "Assinaturas"
   };
 
   var currentType = "expense";
@@ -497,9 +479,7 @@
   var editingTxId = null;
 
   // ---------- view switching ----------
-  var currentViewName = "home";
   function switchView(name) {
-    currentViewName = name;
     if (name !== "add" && editingTxId) {
       editingTxId = null;
       saveTxBtn.textContent = "Salvar";
@@ -507,7 +487,7 @@
     views.forEach(function (v) { v.classList.toggle("active", v.id === "view-" + name); });
     pageTitle.textContent = TITLES[name];
     menuBtn.classList.toggle("hidden", name !== "home");
-    hideBalanceBtn.classList.toggle("hidden", name !== "home" && name !== "proximos-meses");
+    hideBalanceBtn.classList.toggle("hidden", name !== "home");
     addSubscriptionBtn.classList.toggle("hidden", name !== "assinaturas");
     if (name === "history") renderHistory();
     if (name === "categories") renderCategoryManager();
@@ -515,7 +495,6 @@
     if (name === "home") renderHomeDashboard();
     if (name === "periods") { monthOffset = 0; yearOffset = 0; renderPeriods(); }
     if (name === "assinaturas") renderAssinaturas();
-    if (name === "proximos-meses") renderProximosMeses();
   }
 
   function renderPeriods() {
@@ -560,8 +539,7 @@
     balanceHidden = !balanceHidden;
     saveHideBalance(balanceHidden);
     updateHideBalanceIcon();
-    if (currentViewName === "proximos-meses") renderProximosMeses();
-    else renderHomeDashboard();
+    renderHomeDashboard();
   });
 
   // ---------- home quick actions ----------
@@ -656,7 +634,7 @@
       txs.push({
         id: uid(),
         desc: sub.name,
-        amount: sub.amount,
+        amount: subscriptionAmountForMonth(sub, currentCalMonth),
         category: addCategory("expense", SUBSCRIPTION_CATEGORY),
         date: chargeDate,
         type: "expense",
@@ -679,7 +657,8 @@
     assinaturasListWrap.classList.toggle("hidden", subs.length === 0);
     if (subs.length === 0) return;
 
-    var monthlyTotal = subs.reduce(function (s, sub) { return s + sub.amount; }, 0);
+    var todayKey = todayStr().slice(0, 7);
+    var monthlyTotal = subs.reduce(function (s, sub) { return s + subscriptionAmountForMonth(sub, todayKey); }, 0);
     assinaturasTotalValue.textContent = formatCurrency(monthlyTotal);
     subsCountValue.textContent = String(subs.length);
     subsMonthlyValue.textContent = formatCurrency(monthlyTotal);
@@ -688,18 +667,28 @@
     var sorted = subs.slice().sort(function (a, b) { return (a.billingDay || 1) - (b.billingDay || 1); });
     var html = "";
     sorted.forEach(function (sub) {
+      var upcoming = (sub.changes || [])
+        .filter(function (c) { return c.from > todayKey; })
+        .sort(function (a, b) { return a.from < b.from ? -1 : 1; })[0];
       html += '<div class="expense-item" data-id="' + sub.id + '">' +
         '<div class="expense-info">' +
           '<div class="expense-desc">' + escapeHtml(sub.name) + '</div>' +
-          '<div class="expense-meta"><span class="badge">Dia ' + (sub.billingDay || 1) + '</span></div>' +
+          '<div class="expense-meta meta-wrap"><span class="badge">Dia ' + (sub.billingDay || 1) + '</span>' +
+            (upcoming ? '<span class="badge">' + formatCurrency(upcoming.amount) + ' a partir de ' + monthLabelPtBR(upcoming.from) + '</span>' : '') +
+          '</div>' +
         '</div>' +
         '<div class="expense-right">' +
-          '<span class="expense-amount negative">' + formatCurrency(sub.amount) + '</span>' +
+          '<span class="expense-amount negative">' + formatCurrency(subscriptionAmountForMonth(sub, todayKey)) + '</span>' +
+          '<button class="icon-btn edit-sub" data-id="' + sub.id + '" aria-label="Alterar valor">✎</button>' +
           '<button class="icon-btn delete-subscription" data-id="' + sub.id + '" aria-label="Excluir assinatura">✕</button>' +
         '</div>' +
       '</div>';
     });
     subscriptionsList.innerHTML = html;
+
+    subscriptionsList.querySelectorAll(".edit-sub").forEach(function (btn) {
+      btn.addEventListener("click", function () { openSubEdit(btn.dataset.id); });
+    });
 
     subscriptionsList.querySelectorAll(".delete-subscription").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -747,97 +736,59 @@
     showToast("Assinatura adicionada!");
   });
 
-  // ---------- próximos meses module ----------
-  var pendingCommitmentKind = "pagar";
+  // ---------- change a subscription's price from a given month on ----------
+  var editingSubId = null;
 
-  function nextCalendarMonthKey() {
-    var today = todayStr();
-    var parts = today.split("-");
-    var year = parseInt(parts[0], 10);
-    var month = parseInt(parts[1], 10);
-    var targetYear = year + Math.floor(month / 12);
-    var targetMonth = month % 12;
-    return targetYear + "-" + String(targetMonth + 1).padStart(2, "0");
+  function addMonthsToMonthKey(monthKey, n) {
+    var parts = monthKey.split("-");
+    var total = parseInt(parts[0], 10) * 12 + (parseInt(parts[1], 10) - 1) + n;
+    return Math.floor(total / 12) + "-" + String((total % 12) + 1).padStart(2, "0");
   }
 
-  function renderProximosMeses() {
-    var items = loadCommitments();
+  function openSubEdit(id) {
+    var sub = loadSubscriptions().find(function (s) { return s.id === id; });
+    if (!sub) return;
+    editingSubId = id;
 
-    var nextMonth = nextCalendarMonthKey();
-    var pagarNextMonth = items
-      .filter(function (c) { return c.kind === "pagar" && c.dueDate.slice(0, 7) === nextMonth; })
-      .reduce(function (s, c) { return s + c.amount; }, 0);
-    proximosHeroValue.textContent = displayCurrency(pagarNextMonth);
-    proximosHeroLabel.textContent = "A pagar em " + monthLabelPtBR(nextMonth).split(" ")[0];
+    var todayKey = todayStr().slice(0, 7);
+    subEditTitle.textContent = "Alterar valor: " + sub.name;
+    subEditAmountInput.value = String(subscriptionAmountForMonth(sub, todayKey)).replace(".", ",");
 
-    proximosEmpty.classList.toggle("hidden", items.length > 0);
-    proximosListWrap.classList.toggle("hidden", items.length === 0);
-    if (items.length === 0) return;
+    // this month is only offered while its charge hasn't been generated yet
+    var firstOffset = sub.lastGeneratedMonth === todayKey ? 1 : 0;
+    subEditFromSelect.innerHTML = "";
+    for (var i = firstOffset; i <= 12; i++) {
+      var key = addMonthsToMonthKey(todayKey, i);
+      var opt = document.createElement("option");
+      opt.value = key;
+      opt.textContent = monthLabelPtBR(key) + (i === 0 ? " (este mês)" : i === 1 ? " (próximo mês)" : "");
+      subEditFromSelect.appendChild(opt);
+    }
+    subEditFromSelect.value = addMonthsToMonthKey(todayKey, 1);
 
-    var sorted = items.slice().sort(function (a, b) { return a.dueDate < b.dueDate ? -1 : 1; });
-    var html = "";
-    sorted.forEach(function (c) {
-      var isPagar = c.kind === "pagar";
-      html += '<div class="expense-item" data-id="' + c.id + '">' +
-        '<div class="expense-info">' +
-          '<div class="expense-desc">' + escapeHtml(c.desc) + '</div>' +
-          '<div class="expense-meta"><span class="badge">' + formatDateShort(c.dueDate) + '</span></div>' +
-        '</div>' +
-        '<div class="expense-right">' +
-          '<span class="expense-amount ' + (isPagar ? "negative" : "positive") + '">' + (isPagar ? "-" : "+") + formatCurrency(c.amount) + '</span>' +
-          '<button class="icon-btn delete-commitment" data-id="' + c.id + '" aria-label="Excluir compromisso">✕</button>' +
-        '</div>' +
-      '</div>';
-    });
-    commitmentsList.innerHTML = html;
-
-    commitmentsList.querySelectorAll(".delete-commitment").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var id = btn.dataset.id;
-        showConfirm("Excluir este compromisso?", function () {
-          deleteCommitment(id);
-          renderProximosMeses();
-        });
-      });
-    });
+    subEditOverlay.classList.add("open");
+    subEditAmountInput.focus();
   }
+  function closeSubEdit() { subEditOverlay.classList.remove("open"); editingSubId = null; }
 
-  function openCommitmentForm(kind) {
-    pendingCommitmentKind = kind;
-    commitmentFormTitle.textContent = kind === "pagar" ? "Nova Conta a Pagar" : "Novo Recebimento";
-    commitmentDescInput.value = "";
-    commitmentAmountInput.value = "";
-    commitmentDateInput.value = todayStr();
-    commitmentFormOverlay.classList.add("open");
-    commitmentDescInput.focus();
-  }
-  function closeCommitmentForm() { commitmentFormOverlay.classList.remove("open"); }
-
-  pmPagarBtn.addEventListener("click", function () { openCommitmentForm("pagar"); });
-  pmReceberBtn.addEventListener("click", function () { openCommitmentForm("receber"); });
-
-  commitmentFormOverlay.addEventListener("click", function (e) {
-    if (e.target === commitmentFormOverlay) closeCommitmentForm();
+  subEditOverlay.addEventListener("click", function (e) {
+    if (e.target === subEditOverlay) closeSubEdit();
   });
-  commitmentFormSaveBtn.addEventListener("click", function () {
-    var desc = commitmentDescInput.value.trim();
-    if (!desc) { showToast("Digite uma descrição."); commitmentDescInput.focus(); return; }
-    var amount = parseAmount(commitmentAmountInput.value);
-    if (isNaN(amount) || amount <= 0) { showToast("Valor inválido."); commitmentAmountInput.focus(); return; }
-    var dueDate = commitmentDateInput.value;
-    if (!dueDate) { showToast("Escolha uma data."); return; }
+  subEditSaveBtn.addEventListener("click", function () {
+    var amount = parseAmount(subEditAmountInput.value);
+    if (isNaN(amount) || amount <= 0) { showToast("Valor inválido."); subEditAmountInput.focus(); return; }
+    var from = subEditFromSelect.value;
 
-    addCommitment({
-      id: uid(),
-      desc: desc,
-      amount: amount,
-      dueDate: dueDate,
-      kind: pendingCommitmentKind,
-      createdAt: Date.now()
-    });
-    closeCommitmentForm();
-    renderProximosMeses();
-    showToast("Compromisso adicionado!");
+    var subs = loadSubscriptions();
+    var sub = subs.find(function (s) { return s.id === editingSubId; });
+    if (!sub) { closeSubEdit(); return; }
+    sub.changes = (sub.changes || []).filter(function (c) { return c.from !== from; });
+    sub.changes.push({ from: from, amount: amount });
+    saveSubscriptions(subs);
+
+    closeSubEdit();
+    renderAssinaturas();
+    showToast("Novo valor vale a partir de " + monthLabelPtBR(from) + ".");
   });
 
   monthPrevBtn.addEventListener("click", function () { monthOffset -= 1; renderMonthly(); });
@@ -966,8 +917,7 @@
       paymentMethods: loadPaymentMethods(),
       budget: loadBudgetMap(),
       theme: loadTheme(),
-      subscriptions: loadSubscriptions(),
-      commitments: loadCommitments()
+      subscriptions: loadSubscriptions()
     };
   }
 
@@ -986,7 +936,15 @@
   }
 
   function restoreBackup(data) {
-    if (Array.isArray(data.expenses)) saveTransactions(data.expenses);
+    if (Array.isArray(data.expenses)) {
+      // older backups carry the removed card badge on transactions
+      saveTransactions(data.expenses.map(function (t) {
+        if (!("cardName" in t)) return t;
+        var copy = Object.assign({}, t);
+        delete copy.cardName;
+        return copy;
+      }));
+    }
     if (Array.isArray(data.categories)) saveCategories("expense", data.categories);
     if (Array.isArray(data.incomeCategories)) saveCategories("income", data.incomeCategories);
     if (Array.isArray(data.paymentMethods)) {
@@ -997,7 +955,6 @@
     if (data.budget && typeof data.budget === "object" && !Array.isArray(data.budget)) saveBudgetMap(data.budget);
     if (typeof data.theme === "string") { saveTheme(data.theme); applyTheme(data.theme); }
     if (Array.isArray(data.subscriptions)) saveSubscriptions(data.subscriptions);
-    if (Array.isArray(data.commitments)) saveCommitments(data.commitments);
     closeSettings();
     showToast("Backup restaurado!");
     switchView("home");
@@ -1892,6 +1849,9 @@
     var kept = methods.filter(function (m) { return names.indexOf(m) === -1; });
     if (kept.length !== methods.length) savePaymentMethods(kept);
   })();
+
+  // Próximos Meses was removed along with its stored reminders.
+  localStorage.removeItem("gastos_commitments");
 
   (function stripLegacyCardNames() {
     var txs = loadTransactions();

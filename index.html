@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <title>Financial</title>
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 <div id="app">
@@ -194,36 +194,6 @@
     </div>
   </main>
 
-  <main id="view-proximos-meses" class="view">
-    <button type="button" class="link-btn back-link" data-back="home">← Voltar</button>
-
-    <div class="balance-hero">
-      <div class="balance-value" id="proximosHeroValue">R$ 0,00</div>
-      <div class="balance-label" id="proximosHeroLabel">A pagar</div>
-    </div>
-
-    <div class="quick-actions">
-      <button type="button" class="quick-action" id="pmPagarBtn">
-        <span class="quick-action-circle qa-expense">−</span>
-        <span class="quick-action-label">A pagar</span>
-      </button>
-      <button type="button" class="quick-action" id="pmReceberBtn">
-        <span class="quick-action-circle qa-income">+</span>
-        <span class="quick-action-label">A receber</span>
-      </button>
-    </div>
-
-    <div class="module-empty hidden" id="proximosEmpty">
-      <div class="module-empty-icon">📅</div>
-      <div class="module-empty-title">Sem compromissos futuros</div>
-      <div class="module-empty-sub">Suas contas, parcelas e recebimentos previstos vão aparecer aqui</div>
-    </div>
-
-    <div id="proximosListWrap" class="hidden">
-      <div id="commitmentsList" class="history-list"></div>
-    </div>
-  </main>
-
   <main id="view-periods" class="view">
     <button type="button" class="link-btn back-link" data-back="home">← Voltar</button>
     <div class="segmented" id="periodToggle">
@@ -361,14 +331,15 @@
   </div>
 </div>
 
-<div id="commitmentFormOverlay" class="sheet-overlay">
+<div id="subEditOverlay" class="sheet-overlay">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <p class="sheet-title" id="commitmentFormTitle">Novo Compromisso</p>
-    <input type="text" id="commitmentDescInput" class="sheet-input" placeholder="Descrição" maxlength="60">
-    <input type="text" id="commitmentAmountInput" class="sheet-input" placeholder="Valor (R$)" inputmode="decimal">
-    <input type="date" id="commitmentDateInput" class="sheet-input">
-    <button type="button" id="commitmentFormSaveBtn" class="primary-btn">Salvar</button>
+    <p class="sheet-title" id="subEditTitle">Alterar valor</p>
+    <input type="text" id="subEditAmountInput" class="sheet-input" placeholder="Novo valor mensal (R$)" inputmode="decimal">
+    <div class="sheet-label">A partir de</div>
+    <select id="subEditFromSelect" class="sheet-input"></select>
+    <div class="cloud-status">Lançamentos já feitos continuam com o valor antigo.</div>
+    <button type="button" id="subEditSaveBtn" class="primary-btn">Salvar novo valor</button>
   </div>
 </div>
 
@@ -411,6 +382,6 @@
 <div id="toast" class="toast hidden"></div>
 
 <script type="module" src="firebase-sync.js"></script>
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>

@@ -551,6 +551,9 @@ html, body {
   color: var(--muted);
 }
 
+.expense-meta.meta-wrap { flex-wrap: wrap; }
+.expense-meta.meta-wrap .badge { white-space: nowrap; }
+
 .badge {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -573,7 +576,7 @@ html, body {
   line-height: 1;
 }
 .icon-btn:active { color: var(--danger); }
-.icon-btn.edit-tx:active { color: var(--accent); }
+.icon-btn.edit-tx:active, .icon-btn.edit-sub:active { color: var(--accent); }
 
 .empty-state {
   text-align: center;
