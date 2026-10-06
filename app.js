@@ -410,7 +410,6 @@
   var qaExpenseBtn = document.getElementById("qaExpenseBtn");
   var qaReportBtn = document.getElementById("qaReportBtn");
   var qaSubsBtn = document.getElementById("qaSubsBtn");
-  var qaUpcomingBtn = document.getElementById("qaUpcomingBtn");
 
   var homeBalanceValue = document.getElementById("homeBalanceValue");
   var homeMonthPrevBtn = document.getElementById("homeMonthPrevBtn");
@@ -570,7 +569,6 @@
   qaExpenseBtn.addEventListener("click", function () { setTransactionType("expense"); switchView("add"); });
   qaReportBtn.addEventListener("click", function () { switchView("periods"); });
   qaSubsBtn.addEventListener("click", function () { switchView("assinaturas"); });
-  qaUpcomingBtn.addEventListener("click", function () { switchView("proximos-meses"); });
 
   // ---------- generic back links ----------
   document.querySelectorAll("[data-back]").forEach(function (btn) {
@@ -1329,7 +1327,6 @@
           allTxs[idx].paymentMethod = paymentMethod;
         } else {
           delete allTxs[idx].paymentMethod;
-          delete allTxs[idx].cardName;
         }
 
         if (applyToGroup) {
@@ -1340,7 +1337,6 @@
               t.paymentMethod = paymentMethod;
             } else {
               delete t.paymentMethod;
-              delete t.cardName;
             }
             t.desc = baseDesc + " (" + t.installmentIndex + "/" + t.installmentTotal + ")";
           });
@@ -1689,7 +1685,6 @@
         date: first.date,
         type: first.type,
         paymentMethod: first.paymentMethod,
-        cardName: first.cardName,
         createdAt: first.createdAt,
         installmentGroup: groupId
       };
@@ -1784,7 +1779,6 @@
         '<div class="expense-desc">' + escapeHtml(t.desc) + '</div>' +
         '<div class="expense-meta"><span class="badge">' + escapeHtml(t.category) + '</span>' +
           (t.paymentMethod ? '<span class="badge">' + escapeHtml(t.paymentMethod) + '</span>' : '') +
-          (t.cardName ? '<span class="badge">' + escapeHtml(t.cardName) + '</span>' : '') +
           '<span>' + formatDateShort(t.date) + '</span></div>' +
       '</div>' +
       '<div class="expense-right">' +
@@ -1897,6 +1891,15 @@
     var methods = loadPaymentMethods();
     var kept = methods.filter(function (m) { return names.indexOf(m) === -1; });
     if (kept.length !== methods.length) savePaymentMethods(kept);
+  })();
+
+  (function stripLegacyCardNames() {
+    var txs = loadTransactions();
+    var changed = false;
+    txs.forEach(function (t) {
+      if (t.cardName !== undefined) { delete t.cardName; changed = true; }
+    });
+    if (changed) saveTransactions(txs);
   })();
 
   dateInput.value = todayStr();

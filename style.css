@@ -785,7 +785,6 @@ html, body {
 .qa-expense { background: rgba(214, 69, 69, 0.15); color: var(--danger); }
 .qa-report { background: rgba(42, 120, 214, 0.15); color: var(--series-1); }
 .qa-subs { background: rgba(245, 166, 35, 0.15); color: #f5a623; }
-.qa-upcoming { background: rgba(144, 97, 249, 0.15); color: var(--series-5); }
 
 .quick-action-label {
   font-size: 11px;
