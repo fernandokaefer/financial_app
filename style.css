@@ -764,6 +764,7 @@ html, body {
   border: none;
   color: var(--text);
   flex: 1;
+  min-width: 0;
 }
 
 .quick-action:active { opacity: 0.7; }
@@ -783,48 +784,15 @@ html, body {
 .qa-income { background: rgba(46, 125, 91, 0.15); color: var(--accent); }
 .qa-expense { background: rgba(214, 69, 69, 0.15); color: var(--danger); }
 .qa-report { background: rgba(42, 120, 214, 0.15); color: var(--series-1); }
+.qa-subs { background: rgba(245, 166, 35, 0.15); color: #f5a623; }
+.qa-upcoming { background: rgba(144, 97, 249, 0.15); color: var(--series-5); }
 
 .quick-action-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 590;
   color: var(--muted);
+  text-align: center;
 }
-
-.nav-cards {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  margin: 0 -20px 22px;
-  padding: 2px 0 6px;
-  scrollbar-width: none;
-}
-
-.nav-cards::-webkit-scrollbar { display: none; }
-.nav-cards-spacer { flex: 0 0 8px; width: 8px; }
-
-.nav-card {
-  flex-shrink: 0;
-  width: 150px;
-  border-radius: 20px;
-  border: none;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  text-align: left;
-  color: #fff;
-}
-
-.nav-card:active { opacity: 0.85; }
-
-.nav-card-icon { font-size: 20px; margin-bottom: 6px; }
-.nav-card-title { font-size: 15px; font-weight: 700; }
-.nav-card-sub { font-size: 12px; color: rgba(255,255,255,0.72); }
-
-.nav-card-cartoes { background: linear-gradient(135deg, #0f3b3a, #08201f); }
-.nav-card-assinaturas { background: linear-gradient(135deg, #3a2a12, #241a0a); }
-.nav-card-proximos { background: linear-gradient(135deg, #16324a, #0c1a2c); }
 
 .home-month-nav { margin-bottom: 16px; }
 
@@ -927,7 +895,7 @@ html, body {
 .menu-item:active { opacity: 0.6; }
 .menu-item span { font-size: 18px; }
 
-/* ---------- module pages (Cartões / Assinaturas) ---------- */
+/* ---------- module pages (Assinaturas) ---------- */
 
 .module-total {
   margin: 4px 0 22px;
@@ -947,55 +915,3 @@ html, body {
   margin-top: 4px;
 }
 
-.cards-list { display: flex; flex-direction: column; gap: 10px; }
-
-.card-row {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 14px 16px;
-}
-
-.card-row-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.card-row-name { font-size: 15px; font-weight: 700; }
-
-.card-row-invoice {
-  font-size: 20px;
-  font-weight: 800;
-  margin-top: 8px;
-}
-
-.card-row-invoice-sub {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--muted);
-  margin-left: 4px;
-}
-
-.card-limit-bar {
-  height: 6px;
-  border-radius: 100px;
-  background: var(--bg);
-  overflow: hidden;
-  margin-top: 10px;
-}
-
-.card-limit-fill {
-  height: 100%;
-  background: var(--series-1);
-  border-radius: 100px;
-}
-
-.card-limit-fill.over { background: var(--danger); }
-
-.card-row-meta {
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 8px;
-}

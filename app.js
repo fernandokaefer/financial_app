@@ -9,14 +9,11 @@
     theme: "gastos_theme",
     paymentMethods: "gastos_payment_methods",
     hideBalance: "gastos_hide_balance",
-    cards: "gastos_cards",
     subscriptions: "gastos_subscriptions",
     commitments: "gastos_commitments"
   };
   var NEW_CATEGORY_VALUE = "__new__";
   var NEW_PAYMENT_METHOD_VALUE = "__new_payment_method__";
-  var NONE_CARD_VALUE = "__none__";
-  var CREDIT_CARD_METHOD = "Cartão de Crédito";
   var SVG_NS = "http://www.w3.org/2000/svg";
 
   // ---------- storage ----------
@@ -73,34 +70,6 @@
       savePaymentMethods(methods);
     }
     return name;
-  }
-
-  function removePaymentMethod(name) {
-    var methods = loadPaymentMethods().filter(function (m) { return m !== name; });
-    savePaymentMethods(methods);
-  }
-
-  // ---------- cards ----------
-  function loadCards() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.cards)) || []; }
-    catch (e) { return []; }
-  }
-  function saveCards(cards) {
-    localStorage.setItem(STORAGE_KEYS.cards, JSON.stringify(cards));
-    scheduleCloudSave();
-  }
-  function addCard(card) {
-    var cards = loadCards();
-    cards.push(card);
-    saveCards(cards);
-    addPaymentMethod(card.name);
-  }
-  function deleteCard(id) {
-    var cards = loadCards();
-    var card = cards.find(function (c) { return c.id === id; });
-    cards = cards.filter(function (c) { return c.id !== id; });
-    saveCards(cards);
-    if (card) removePaymentMethod(card.name);
   }
 
   // ---------- subscriptions ----------
@@ -268,36 +237,26 @@
     return y + "-" + m + "-" + day;
   }
 
-  // Generalized version of the billing-cycle math below, parameterized by
-  // closing day so per-card invoice cycles can reuse it (closeDay 0 = calendar month).
-  function financialMonthKeyForClose(dateStr, closeDay) {
+  function financialMonthKeyFor(dateStr) {
     var parts = dateStr.split("-");
     var year = parseInt(parts[0], 10);
     var month = parseInt(parts[1], 10) - 1;
     var day = parseInt(parts[2], 10);
-    if (day <= closeDay) {
+    if (day <= CYCLE_CLOSE_DAY) {
       month -= 1;
       if (month < 0) { month = 11; year -= 1; }
     }
     return year + "-" + String(month + 1).padStart(2, "0");
   }
 
-  function cycleBoundsForClose(closeDay, monthKey) {
+  function cycleBounds(monthKey) {
     var parts = monthKey.split("-");
     var year = parseInt(parts[0], 10);
     var month = parseInt(parts[1], 10) - 1;
     return {
-      start: isoDateStr(new Date(year, month, closeDay + 1)),
-      end: isoDateStr(new Date(year, month + 1, closeDay))
+      start: isoDateStr(new Date(year, month, CYCLE_CLOSE_DAY + 1)),
+      end: isoDateStr(new Date(year, month + 1, CYCLE_CLOSE_DAY))
     };
-  }
-
-  function financialMonthKeyFor(dateStr) {
-    return financialMonthKeyForClose(dateStr, CYCLE_CLOSE_DAY);
-  }
-
-  function cycleBounds(monthKey) {
-    return cycleBoundsForClose(CYCLE_CLOSE_DAY, monthKey);
   }
 
   function formatShortDate(dateStr) {
@@ -390,8 +349,6 @@
   var newPaymentMethodBox = document.getElementById("newPaymentMethodBox");
   var newPaymentMethodInput = document.getElementById("newPaymentMethodInput");
   var confirmNewPaymentMethodBtn = document.getElementById("confirmNewPaymentMethodBtn");
-  var cardSelectField = document.getElementById("cardSelectField");
-  var cardSelect = document.getElementById("cardSelect");
   var applyAllInstallmentsField = document.getElementById("applyAllInstallmentsField");
   var applyAllInstallmentsToggle = document.getElementById("applyAllInstallmentsToggle");
   var saveTxBtn = document.getElementById("saveTxBtn");
@@ -447,12 +404,13 @@
   var menuHistoryBtn = document.getElementById("menuHistoryBtn");
   var menuCategoriesBtn = document.getElementById("menuCategoriesBtn");
   var menuBudgetBtn = document.getElementById("menuBudgetBtn");
-  var menuSyncInstallmentsBtn = document.getElementById("menuSyncInstallmentsBtn");
   var menuSettingsBtn = document.getElementById("menuSettingsBtn");
 
   var qaIncomeBtn = document.getElementById("qaIncomeBtn");
   var qaExpenseBtn = document.getElementById("qaExpenseBtn");
   var qaReportBtn = document.getElementById("qaReportBtn");
+  var qaSubsBtn = document.getElementById("qaSubsBtn");
+  var qaUpcomingBtn = document.getElementById("qaUpcomingBtn");
 
   var homeBalanceValue = document.getElementById("homeBalanceValue");
   var homeMonthPrevBtn = document.getElementById("homeMonthPrevBtn");
@@ -464,18 +422,6 @@
   var homeTxCount = document.getElementById("homeTxCount");
   var homeTxFilter = document.getElementById("homeTxFilter");
   var homeTxList = document.getElementById("homeTxList");
-
-  var addCardBtn = document.getElementById("addCardBtn");
-  var cartoesEmpty = document.getElementById("cartoesEmpty");
-  var cartoesEmptyAddBtn = document.getElementById("cartoesEmptyAddBtn");
-  var cartoesListWrap = document.getElementById("cartoesListWrap");
-  var cartoesTotalValue = document.getElementById("cartoesTotalValue");
-  var cardsList = document.getElementById("cardsList");
-  var cardFormOverlay = document.getElementById("cardFormOverlay");
-  var cardNameInput = document.getElementById("cardNameInput");
-  var cardLimitInput = document.getElementById("cardLimitInput");
-  var cardClosingDayInput = document.getElementById("cardClosingDayInput");
-  var cardFormSaveBtn = document.getElementById("cardFormSaveBtn");
 
   var addSubscriptionBtn = document.getElementById("addSubscriptionBtn");
   var assinaturasEmpty = document.getElementById("assinaturasEmpty");
@@ -496,7 +442,6 @@
   var proximosHeroLabel = document.getElementById("proximosHeroLabel");
   var pmPagarBtn = document.getElementById("pmPagarBtn");
   var pmReceberBtn = document.getElementById("pmReceberBtn");
-  var pmCardBtn = document.getElementById("pmCardBtn");
   var proximosEmpty = document.getElementById("proximosEmpty");
   var proximosListWrap = document.getElementById("proximosListWrap");
   var commitmentsList = document.getElementById("commitmentsList");
@@ -540,7 +485,6 @@
     history: "Histórico",
     categories: "Categorias",
     periods: "Períodos",
-    cartoes: "Cartões",
     assinaturas: "Assinaturas",
     "proximos-meses": "Próximos Meses"
   };
@@ -565,14 +509,12 @@
     pageTitle.textContent = TITLES[name];
     menuBtn.classList.toggle("hidden", name !== "home");
     hideBalanceBtn.classList.toggle("hidden", name !== "home" && name !== "proximos-meses");
-    addCardBtn.classList.toggle("hidden", name !== "cartoes");
     addSubscriptionBtn.classList.toggle("hidden", name !== "assinaturas");
     if (name === "history") renderHistory();
     if (name === "categories") renderCategoryManager();
-    if (name === "add" && !editingTxId) { renderCategorySelect(); renderPaymentMethodSelect(); updateCardSelectVisibility(); }
+    if (name === "add" && !editingTxId) { renderCategorySelect(); renderPaymentMethodSelect(); }
     if (name === "home") renderHomeDashboard();
     if (name === "periods") { monthOffset = 0; yearOffset = 0; renderPeriods(); }
-    if (name === "cartoes") renderCartoes();
     if (name === "assinaturas") renderAssinaturas();
     if (name === "proximos-meses") renderProximosMeses();
   }
@@ -596,65 +538,6 @@
 
   backToHomeBtn.addEventListener("click", function () { switchView("home"); });
 
-  // ---------- installment sync (fix stragglers left over from per-installment edits) ----------
-  function computeInstallmentSyncPlan() {
-    var txs = loadTransactions();
-    var groups = {};
-    txs.forEach(function (t) {
-      if (!t.installmentGroup) return;
-      if (!groups[t.installmentGroup]) groups[t.installmentGroup] = [];
-      groups[t.installmentGroup].push(t);
-    });
-
-    var changedGroups = 0;
-    var changedItems = 0;
-
-    Object.keys(groups).forEach(function (groupId) {
-      var items = groups[groupId];
-      if (items.length < 2) return;
-
-      var classifiedItems = items.filter(function (t) { return !!t.cardName; });
-      if (classifiedItems.length === 0) return;
-
-      var counts = {};
-      classifiedItems.forEach(function (t) {
-        var key = t.cardName;
-        if (!counts[key]) {
-          counts[key] = {
-            cardName: t.cardName,
-            paymentMethod: t.paymentMethod,
-            category: t.category,
-            count: 0,
-            minIndex: t.installmentIndex || 999
-          };
-        }
-        counts[key].count++;
-        if ((t.installmentIndex || 999) < counts[key].minIndex) counts[key].minIndex = t.installmentIndex || 999;
-      });
-
-      var best = null;
-      Object.keys(counts).forEach(function (k) {
-        var c = counts[k];
-        if (!best || c.count > best.count || (c.count === best.count && c.minIndex < best.minIndex)) best = c;
-      });
-
-      var groupChanged = false;
-      items.forEach(function (t) {
-        var needsChange = t.cardName !== best.cardName || t.paymentMethod !== best.paymentMethod || t.category !== best.category;
-        if (needsChange) {
-          t.cardName = best.cardName;
-          t.paymentMethod = best.paymentMethod;
-          t.category = best.category;
-          changedItems++;
-          groupChanged = true;
-        }
-      });
-      if (groupChanged) changedGroups++;
-    });
-
-    return { txs: txs, changedGroups: changedGroups, changedItems: changedItems };
-  }
-
   // ---------- side menu drawer ----------
   menuBtn.addEventListener("click", function () { menuOverlay.classList.add("open"); });
   menuOverlay.addEventListener("click", function (e) {
@@ -663,22 +546,6 @@
   menuHistoryBtn.addEventListener("click", function () { menuOverlay.classList.remove("open"); switchView("history"); });
   menuCategoriesBtn.addEventListener("click", function () { menuOverlay.classList.remove("open"); switchView("categories"); });
   menuBudgetBtn.addEventListener("click", function () { menuOverlay.classList.remove("open"); openBudgetModal(); });
-  menuSyncInstallmentsBtn.addEventListener("click", function () {
-    menuOverlay.classList.remove("open");
-    var plan = computeInstallmentSyncPlan();
-    if (plan.changedItems === 0) {
-      showToast("Tudo certo! Nenhuma parcela precisa de ajuste.");
-      return;
-    }
-    showConfirm(
-      "Isso vai igualar cartão, forma de pagamento e categoria em " + plan.changedItems + " parcela(s) de " + plan.changedGroups + " compra(s), usando a classificação mais comum de cada uma. Continuar?",
-      function () {
-        saveTransactions(plan.txs);
-        renderHomeDashboard();
-        showToast(plan.changedItems + " parcela(s) sincronizada(s)!");
-      }
-    );
-  });
   menuSettingsBtn.addEventListener("click", function () { menuOverlay.classList.remove("open"); openSettings(); });
 
   // ---------- balance visibility ----------
@@ -702,11 +569,8 @@
   qaIncomeBtn.addEventListener("click", function () { setTransactionType("income"); switchView("add"); });
   qaExpenseBtn.addEventListener("click", function () { setTransactionType("expense"); switchView("add"); });
   qaReportBtn.addEventListener("click", function () { switchView("periods"); });
-
-  // ---------- home nav cards ----------
-  document.querySelectorAll(".nav-card").forEach(function (card) {
-    card.addEventListener("click", function () { switchView(card.dataset.view); });
-  });
+  qaSubsBtn.addEventListener("click", function () { switchView("assinaturas"); });
+  qaUpcomingBtn.addEventListener("click", function () { switchView("proximos-meses"); });
 
   // ---------- generic back links ----------
   document.querySelectorAll("[data-back]").forEach(function (btn) {
@@ -769,112 +633,6 @@
     homeTxCount.textContent = String(sorted.length);
     renderTransactionItems(homeTxList, sorted, renderHomeDashboard);
   }
-
-  // ---------- cartões module ----------
-  function currentCardInvoice(card, txs) {
-    var closeDay = card.closingDay || 0;
-    var thisCardMonth = financialMonthKeyForClose(todayStr(), closeDay);
-    var total = 0;
-    txs.forEach(function (t) {
-      if (typeOf(t) !== "expense") return;
-      var matchesCard = t.cardName === card.name || (!t.cardName && t.paymentMethod === card.name);
-      if (!matchesCard) return;
-      if (financialMonthKeyForClose(t.date, closeDay) !== thisCardMonth) return;
-      total += t.amount;
-    });
-    return total;
-  }
-
-  function renderCartoes() {
-    var cards = loadCards();
-    var txs = loadTransactions();
-
-    cartoesEmpty.classList.toggle("hidden", cards.length > 0);
-    cartoesListWrap.classList.toggle("hidden", cards.length === 0);
-    if (cards.length === 0) return;
-
-    var totalInvoices = 0;
-    var html = "";
-    cards.forEach(function (card) {
-      var invoice = currentCardInvoice(card, txs);
-      totalInvoices += invoice;
-
-      var barHtml = "";
-      if (card.limit) {
-        var pct = Math.min(100, Math.round((invoice / card.limit) * 100));
-        barHtml = '<div class="card-limit-bar"><div class="card-limit-fill' + (invoice > card.limit ? ' over' : '') + '" style="width:' + pct + '%"></div></div>';
-      }
-
-      var metaParts = [];
-      if (card.limit) metaParts.push("Limite " + formatCurrency(card.limit));
-      if (card.closingDay) metaParts.push("Fecha dia " + card.closingDay);
-
-      html += '<div class="card-row" data-id="' + card.id + '">' +
-        '<div class="card-row-top">' +
-          '<span class="card-row-name">' + escapeHtml(card.name) + '</span>' +
-          '<button class="icon-btn delete-card" data-id="' + card.id + '" aria-label="Excluir cartão">✕</button>' +
-        '</div>' +
-        '<div class="card-row-invoice">' + formatCurrency(invoice) + '<span class="card-row-invoice-sub">fatura atual</span></div>' +
-        barHtml +
-        (metaParts.length ? '<div class="card-row-meta">' + metaParts.join(" · ") + '</div>' : '') +
-      '</div>';
-    });
-
-    cardsList.innerHTML = html;
-    cartoesTotalValue.textContent = formatCurrency(totalInvoices);
-
-    cardsList.querySelectorAll(".delete-card").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var id = btn.dataset.id;
-        showConfirm("Excluir este cartão? As transações antigas continuam no histórico.", function () {
-          deleteCard(id);
-          renderCartoes();
-        });
-      });
-    });
-  }
-
-  function openCardForm() {
-    cardNameInput.value = "";
-    cardLimitInput.value = "";
-    cardClosingDayInput.value = "";
-    cardFormOverlay.classList.add("open");
-    cardNameInput.focus();
-  }
-  function closeCardForm() { cardFormOverlay.classList.remove("open"); }
-
-  addCardBtn.addEventListener("click", openCardForm);
-  cartoesEmptyAddBtn.addEventListener("click", openCardForm);
-  cardFormOverlay.addEventListener("click", function (e) {
-    if (e.target === cardFormOverlay) closeCardForm();
-  });
-  cardFormSaveBtn.addEventListener("click", function () {
-    var name = cardNameInput.value.trim();
-    if (!name) {
-      showToast("Digite o nome do cartão.");
-      cardNameInput.focus();
-      return;
-    }
-    var limitVal = cardLimitInput.value.trim() ? parseAmount(cardLimitInput.value) : null;
-    if (limitVal !== null && (isNaN(limitVal) || limitVal < 0)) {
-      showToast("Limite inválido.");
-      cardLimitInput.focus();
-      return;
-    }
-    var closingDayVal = cardClosingDayInput.value.trim() ? parseInt(cardClosingDayInput.value, 10) : 0;
-    if (isNaN(closingDayVal) || closingDayVal < 0 || closingDayVal > 28) closingDayVal = 0;
-
-    addCard({
-      id: uid(),
-      name: name,
-      limit: limitVal,
-      closingDay: closingDayVal,
-      createdAt: Date.now()
-    });
-    closeCardForm();
-    renderCartoes();
-    showToast("Cartão adicionado!");
-  });
 
   // ---------- assinaturas module ----------
   var SUBSCRIPTION_CATEGORY = "Assinaturas";
@@ -1059,7 +817,6 @@
 
   pmPagarBtn.addEventListener("click", function () { openCommitmentForm("pagar"); });
   pmReceberBtn.addEventListener("click", function () { openCommitmentForm("receber"); });
-  pmCardBtn.addEventListener("click", function () { switchView("cartoes"); });
 
   commitmentFormOverlay.addEventListener("click", function (e) {
     if (e.target === commitmentFormOverlay) closeCommitmentForm();
@@ -1116,36 +873,6 @@
     paymentMethodField.classList.toggle("hidden", currentType !== "expense");
     newPaymentMethodBox.classList.add("hidden");
     renderCategorySelect();
-    updateCardSelectVisibility();
-  }
-
-  function renderCardSelect(selectValue) {
-    var cards = loadCards();
-    cardSelect.innerHTML = "";
-
-    var noneOpt = document.createElement("option");
-    noneOpt.value = NONE_CARD_VALUE;
-    noneOpt.textContent = "Nenhum (genérico)";
-    cardSelect.appendChild(noneOpt);
-
-    cards.forEach(function (c) {
-      var opt = document.createElement("option");
-      opt.value = c.name;
-      opt.textContent = c.name;
-      cardSelect.appendChild(opt);
-    });
-
-    cardSelect.value = (selectValue && cards.some(function (c) { return c.name === selectValue; }))
-      ? selectValue
-      : NONE_CARD_VALUE;
-  }
-
-  function updateCardSelectVisibility() {
-    var show = currentType === "expense" &&
-      paymentMethodSelect.value === CREDIT_CARD_METHOD &&
-      loadCards().length > 0;
-    cardSelectField.classList.toggle("hidden", !show);
-    if (show) renderCardSelect();
   }
 
   typeToggle.addEventListener("click", function (e) {
@@ -1241,7 +968,6 @@
       paymentMethods: loadPaymentMethods(),
       budget: loadBudgetMap(),
       theme: loadTheme(),
-      cards: loadCards(),
       subscriptions: loadSubscriptions(),
       commitments: loadCommitments()
     };
@@ -1265,10 +991,13 @@
     if (Array.isArray(data.expenses)) saveTransactions(data.expenses);
     if (Array.isArray(data.categories)) saveCategories("expense", data.categories);
     if (Array.isArray(data.incomeCategories)) saveCategories("income", data.incomeCategories);
-    if (Array.isArray(data.paymentMethods)) savePaymentMethods(data.paymentMethods);
+    if (Array.isArray(data.paymentMethods)) {
+      // backups made while Cartões existed also stored each card's name as a payment method
+      var removedCardNames = Array.isArray(data.cards) ? data.cards.map(function (c) { return c.name; }) : [];
+      savePaymentMethods(data.paymentMethods.filter(function (m) { return removedCardNames.indexOf(m) === -1; }));
+    }
     if (data.budget && typeof data.budget === "object" && !Array.isArray(data.budget)) saveBudgetMap(data.budget);
     if (typeof data.theme === "string") { saveTheme(data.theme); applyTheme(data.theme); }
-    if (Array.isArray(data.cards)) saveCards(data.cards);
     if (Array.isArray(data.subscriptions)) saveSubscriptions(data.subscriptions);
     if (Array.isArray(data.commitments)) saveCommitments(data.commitments);
     closeSettings();
@@ -1459,8 +1188,9 @@
 
   // ---------- payment method select (Add tab) ----------
   function renderPaymentMethodSelect(selectValue) {
-    var cardNames = loadCards().map(function (c) { return c.name; });
-    var methods = loadPaymentMethods().filter(function (m) { return cardNames.indexOf(m) === -1; });
+    var methods = loadPaymentMethods().slice();
+    // keep a transaction's own method selectable when editing even if it is no longer in the list
+    if (selectValue && methods.indexOf(selectValue) === -1) methods.push(selectValue);
     paymentMethodSelect.innerHTML = "";
 
     methods.forEach(function (m) {
@@ -1488,7 +1218,6 @@
     } else {
       newPaymentMethodBox.classList.add("hidden");
     }
-    updateCardSelectVisibility();
   });
 
   confirmNewPaymentMethodBtn.addEventListener("click", function () {
@@ -1498,7 +1227,6 @@
     newPaymentMethodInput.value = "";
     newPaymentMethodBox.classList.add("hidden");
     renderPaymentMethodSelect(name);
-    updateCardSelectVisibility();
   });
 
   // ---------- expense form ----------
@@ -1517,7 +1245,6 @@
     saveTxBtn.textContent = "Salvar";
     renderCategorySelect();
     renderPaymentMethodSelect();
-    updateCardSelectVisibility();
   }
 
   function openEditTransaction(id) {
@@ -1532,19 +1259,7 @@
     renderCategorySelect(tx.category);
     newCategoryBox.classList.add("hidden");
 
-    if (currentType === "expense") {
-      var cardNamesNow = loadCards().map(function (c) { return c.name; });
-      var pmValue = tx.paymentMethod;
-      var cardNameValue = tx.cardName || null;
-      if (!cardNameValue && pmValue && cardNamesNow.indexOf(pmValue) !== -1) {
-        // legacy record: the payment method itself used to be the card's own name
-        cardNameValue = pmValue;
-        pmValue = CREDIT_CARD_METHOD;
-      }
-      renderPaymentMethodSelect(pmValue);
-      updateCardSelectVisibility();
-      if (cardNameValue) cardSelect.value = cardNameValue;
-    }
+    if (currentType === "expense") renderPaymentMethodSelect(tx.paymentMethod);
 
     installmentToggleField.classList.add("hidden");
     installmentToggle.checked = false;
@@ -1582,7 +1297,6 @@
     }
 
     var paymentMethod = null;
-    var cardName = null;
     if (currentType === "expense") {
       paymentMethod = paymentMethodSelect.value;
       if (paymentMethod === NEW_PAYMENT_METHOD_VALUE || !paymentMethod) {
@@ -1593,11 +1307,6 @@
           return;
         }
         paymentMethod = addPaymentMethod(pendingMethod);
-      }
-      if (paymentMethod === CREDIT_CARD_METHOD &&
-          !cardSelectField.classList.contains("hidden") &&
-          cardSelect.value !== NONE_CARD_VALUE) {
-        cardName = cardSelect.value;
       }
     }
 
@@ -1618,8 +1327,6 @@
         allTxs[idx].type = currentType;
         if (currentType === "expense") {
           allTxs[idx].paymentMethod = paymentMethod;
-          if (cardName) allTxs[idx].cardName = cardName;
-          else delete allTxs[idx].cardName;
         } else {
           delete allTxs[idx].paymentMethod;
           delete allTxs[idx].cardName;
@@ -1631,8 +1338,6 @@
             t.category = category;
             if (currentType === "expense") {
               t.paymentMethod = paymentMethod;
-              if (cardName) t.cardName = cardName;
-              else delete t.cardName;
             } else {
               delete t.paymentMethod;
               delete t.cardName;
@@ -1676,7 +1381,6 @@
           date: addMonthsToDateStr(date, i),
           type: "expense",
           paymentMethod: paymentMethod,
-          cardName: cardName || undefined,
           installmentGroup: groupId,
           installmentIndex: i + 1,
           installmentTotal: installments,
@@ -1692,7 +1396,6 @@
         date: date,
         type: currentType,
         paymentMethod: currentType === "expense" ? paymentMethod : undefined,
-        cardName: currentType === "expense" ? (cardName || undefined) : undefined,
         createdAt: createdAt
       });
     }
@@ -2181,6 +1884,19 @@
       }
     });
     if (changed) saveTransactions(txs);
+  })();
+
+  // The Cartões feature was removed: drop its stored cards and the card names it
+  // had mixed into the payment-method list. Transactions themselves are untouched.
+  (function removeLegacyCardData() {
+    var raw = localStorage.getItem("gastos_cards");
+    if (raw === null) return;
+    var names = [];
+    try { names = (JSON.parse(raw) || []).map(function (c) { return c.name; }); } catch (e) {}
+    localStorage.removeItem("gastos_cards");
+    var methods = loadPaymentMethods();
+    var kept = methods.filter(function (m) { return names.indexOf(m) === -1; });
+    if (kept.length !== methods.length) savePaymentMethods(kept);
   })();
 
   dateInput.value = todayStr();
