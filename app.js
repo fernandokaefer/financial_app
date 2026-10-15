@@ -217,9 +217,9 @@
     return d.toISOString().slice(0, 10);
   }
 
-  // Billing cycle: closes on the 10th, so a cycle named "2026-07" runs
-  // from Jul 11 through Aug 10 (paid mid-August) — not the calendar month.
-  var CYCLE_CLOSE_DAY = 10;
+  // Billing cycle: starts on the 10th (the card closes then), so a cycle named
+  // "2026-07" runs from Jul 10 through Aug 9 — not the calendar month.
+  var CYCLE_START_DAY = 10;
 
   function isoDateStr(d) {
     var y = d.getFullYear();
@@ -233,7 +233,7 @@
     var year = parseInt(parts[0], 10);
     var month = parseInt(parts[1], 10) - 1;
     var day = parseInt(parts[2], 10);
-    if (day <= CYCLE_CLOSE_DAY) {
+    if (day < CYCLE_START_DAY) {
       month -= 1;
       if (month < 0) { month = 11; year -= 1; }
     }
@@ -245,8 +245,8 @@
     var year = parseInt(parts[0], 10);
     var month = parseInt(parts[1], 10) - 1;
     return {
-      start: isoDateStr(new Date(year, month, CYCLE_CLOSE_DAY + 1)),
-      end: isoDateStr(new Date(year, month + 1, CYCLE_CLOSE_DAY))
+      start: isoDateStr(new Date(year, month, CYCLE_START_DAY)),
+      end: isoDateStr(new Date(year, month + 1, CYCLE_START_DAY - 1))
     };
   }
 
